@@ -47,7 +47,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 :focus-visible{outline:3px solid color-mix(in srgb,var(--primary) 55%,transparent);outline-offset:2px;border-radius:6px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
-svg.i.sm{width:15px;height:15px}svg.i.lg{width:22px;height:22px}
+svg.i.sm{width:15px;height:15px}svg.i.lg{width:22px;height:22px}svg.i.xl{width:60px;height:60px}
 .skip{position:absolute;left:-999px;top:8px;background:var(--primary);color:var(--on-primary);padding:8px 12px;border-radius:8px;z-index:100}.skip:focus{left:8px}
 
 /* layout */
@@ -262,6 +262,39 @@ details.mini summary{cursor:pointer;font-weight:650;font-size:.88rem;min-height:
 .spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--surface3);border-top-color:var(--primary);animation:sp 1s linear infinite;margin:0 auto 10px}
 @keyframes sp{to{transform:rotate(360deg)}}
 
+/* animated icons (Hunter-style) */
+.flm{display:inline-block;vertical-align:-4px;filter:drop-shadow(0 1px 2px rgba(234,88,12,.35))}
+.flm.dim{filter:grayscale(1);opacity:.5}
+.flm .fo,.flm .fi{transform-box:fill-box;transform-origin:50% 100%}
+.flm .fo{animation:flk1 1.15s ease-in-out infinite}.flm .fi{animation:flk2 .8s ease-in-out infinite}
+.flm.dim .fo,.flm.dim .fi{animation:none}
+@keyframes flk1{0%,100%{transform:scale(1,1) skewX(0)}30%{transform:scale(.96,1.07) skewX(-3deg)}60%{transform:scale(1.03,.95) skewX(2deg)}}
+@keyframes flk2{0%,100%{transform:scale(1,1)}40%{transform:scale(.9,1.14)}70%{transform:scale(1.06,.9)}}
+.frz{display:inline-flex;align-items:center;gap:3px;font-weight:700;font-size:.78rem;color:#0284c7}
+html[data-theme="dark"] .frz{color:#7dd3fc}
+.frz svg{animation:frzspin 6s linear infinite}
+@keyframes frzspin{to{transform:rotate(360deg)}}
+.check.on{animation:pop .28s ease-out}
+@keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+.xpfloat{position:fixed;z-index:300;font-weight:800;color:var(--primary-text);pointer-events:none;animation:xpup .9s ease-out forwards;font-size:15px;text-shadow:0 1px 0 var(--bg)}
+@keyframes xpup{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-34px)}}
+.cele{position:fixed;inset:0;z-index:250;display:grid;place-items:center;background:rgba(15,21,19,.35);animation:fade .2s ease-out;overflow:hidden}
+.cbox{position:relative;background:var(--surface);border-radius:20px;box-shadow:var(--shadow2);padding:26px 30px;text-align:center;min-width:270px;animation:popin .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes popin{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.cbox .big{width:88px;height:88px;margin:0 auto 6px;display:grid;place-items:center;animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-4px) scale(1.04)}}
+.cbox h2{margin:4px 0}
+.conf{position:absolute;top:-14px;width:8px;height:14px;border-radius:2px;animation:fall 1.9s ease-in forwards}
+@keyframes fall{to{transform:translateY(560px) rotate(540deg);opacity:0}}
+.badge:not(.locked) .ic{position:relative;overflow:hidden}
+.badge:not(.locked) .ic::after{content:'';position:absolute;inset:-40%;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);animation:shine 3.2s ease-in-out infinite}
+@keyframes shine{0%,60%{transform:translateX(-70%)}100%{transform:translateX(70%)}}
+.ring.full svg circle:last-child{animation:glow 1.8s ease-in-out infinite}
+@keyframes glow{50%{opacity:.75}}
+.lvl .bar>i,.minicard .bar>i{background:linear-gradient(90deg,var(--primary),color-mix(in srgb,var(--primary) 60%,#a7f3d0));background-size:200% 100%;animation:barflow 3s linear infinite}
+@keyframes barflow{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.flm .fo,.flm .fi,.frz svg,.cbox .big,.conf,.badge .ic::after,.lvl .bar>i,.minicard .bar>i{animation:none!important}.conf{display:none}}
+
 </style>
 </head>
 <body>
@@ -269,7 +302,7 @@ details.mini summary{cursor:pointer;font-weight:650;font-size:.88rem;min-height:
 <script>
 'use strict';
 /* ===== DA Journey v2 ===== */
-const APP_VER='2026.11.25-1';
+const APP_VER='2026.11.25-2';
 const CFG={
  CLIENT_ID:'331264298614-jr5f5ib5o7jkaqrbs3k7nla4gm7lsrv2.apps.googleusercontent.com', // set after the "DA Journey" Google Cloud project is created
  OWNER_H:'e3f2701c4914321da0c06ace2cb5fad3a3b71419d9da7f3de73f83a503bdaa1b', // SHA-256 of the owner's Google email (same owner as Hunter System)
@@ -358,8 +391,21 @@ const IP={
  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+ snow:'<path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9 4.9 19.1M9 3.5l3 2 3-2M9 20.5l3-2 3 2M3.5 9l2 3-2 3M20.5 9l-2 3 2 3"/>',
  logo:'<path d="M4 20V14M10 20V9M16 20V12M22 20V4" stroke-width="2.6"/><path d="M3 9l6-5 6 4 7-6" stroke-width="2"/>'
 };
+let flmN=0;
+function flame(size,dim){const id='fg'+(++flmN);const w=document.createElement('span');w.className='flm'+(dim?' dim':'');w.setAttribute('aria-hidden','true');
+ w.innerHTML=`<svg viewBox="0 0 24 24" width="${size||20}" height="${size||20}"><defs><linearGradient id="${id}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#dc2626"/><stop offset=".55" stop-color="#ea580c"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs><path class="fo" fill="url(#${id})" d="M12 1.8c.9 3.4 5.6 5.6 5.6 11a5.6 5.6 0 0 1-11.2 0c0-2.3 1.1-4 2.3-5.1.4 1.7 1.4 2.8 2.6 2.8-.4-3 .1-6.2.7-8.7z"/><path class="fi" fill="#fde68a" d="M12 21.2a2.9 2.9 0 0 1-2.9-2.9c0-1.6 1.2-2.6 2-3.8.3 1 .9 1.6 1.6 1.6-.1-.9.2-2 .6-2.7 1 1.2 1.6 2.7 1.6 4.4a2.9 2.9 0 0 1-2.9 3.4z"/></svg>`;return w}
+function freezeTag(n){if(!n)return null;const s=h('span',{class:'frz',title:n+' streak freeze ready'},ic('snow','sm'),String(n));return s}
+let lastPtr={x:0,y:0,t:0};addEventListener('pointerdown',e=>{lastPtr={x:e.clientX,y:e.clientY,t:Date.now()}},true);
+function floatXP(n){if(!n||n<=0||Date.now()-lastPtr.t>1500)return;const f=h('div',{class:'xpfloat',text:'+'+n+' XP',style:{left:lastPtr.x+'px',top:(lastPtr.y-18)+'px'}});document.body.appendChild(f);setTimeout(()=>f.remove(),950)}
+function celebrate(kind,title,sub){if(matchMedia('(prefers-reduced-motion: reduce)').matches){toast(title+(sub?' · '+sub:''));return}
+ const bg=h('div',{class:'cele',role:'status','aria-live':'polite'});const cols=['#059669','#f59e0b','#ea580c','#2563eb','#db2777','#7c3aed'];
+ for(let i=0;i<34;i++)bg.appendChild(h('i',{class:'conf',style:{left:(Math.random()*100)+'%',background:cols[i%cols.length],animationDelay:(Math.random()*.5)+'s',animationDuration:(1.5+Math.random())+'s'}}));
+ const big=h('div',{class:'big'});big.appendChild(kind==='level'?h('span',{style:{color:'var(--amber)'}},ic('trophy','xl')):flame(84));
+ bg.appendChild(h('div',{class:'cbox'},big,h('h2',{text:title}),sub?h('p',{class:'muted',style:{margin:0},text:sub}):null));
+ const close=()=>bg.remove();bg.addEventListener('click',close);document.body.appendChild(bg);setTimeout(close,2600)}
 function ic(name,cls){const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 24 24');s.setAttribute('class','i'+(cls?' '+cls:''));s.setAttribute('aria-hidden','true');s.innerHTML=IP[name]||'';return s}
 
 /* ---------- subjects ---------- */
@@ -379,7 +425,7 @@ function indexContent(){
 }
 
 /* ---------- state ---------- */
-function freshState(){return{v:1,updated:0,tasks:{},logs:{},prac:{},quiz:{},iv:{},kit:{checks:{},apps:{},proj:{}},settings:{theme:'system'}}}
+function freshState(){return{v:1,updated:0,tasks:{},logs:{},prac:{},quiz:{},iv:{},fb:{},kit:{checks:{},apps:{},proj:{}},settings:{theme:'system'}}}
 let S=freshState();
 function loadState(){try{const o=JSON.parse(localStorage.getItem(LS)||'null');if(o&&o.v===1){S=Object.assign(freshState(),o);S.kit=Object.assign({checks:{},apps:{},proj:{}},o.kit||{})}}catch(e){}}
 let saveTm=null;
@@ -388,14 +434,17 @@ function save(){S.updated=Date.now();try{localStorage.setItem(LS,JSON.stringify(
 // merge another state (from Drive or an import) into S: per entry, newer t wins
 function mergeState(o){if(!o||o.v!==1)return false;let ch=false;
  const mm=(a,b)=>{for(const k in b){const x=a[k],y=b[k];if(!y)continue;if(!x||(y.t||0)>(x.t||0)){a[k]=y;ch=true}}};
- for(const key of['tasks','logs','prac','quiz','iv'])mm(S[key]=S[key]||{},o[key]||{});
+ for(const key of['tasks','logs','prac','quiz','iv','fb'])mm(S[key]=S[key]||{},o[key]||{});
  const ok=o.kit||{};for(const key of['checks','apps','proj'])mm(S.kit[key]=S.kit[key]||{},ok[key]||{});
  if(ch){S.updated=Math.max(S.updated,o.updated||0);try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}return ch}
 const now=()=>Date.now();
 
 /* ---------- plan logic ---------- */
 const tDone=t=>!!(S.tasks[t.id]&&S.tasks[t.id].done);
-function setTaskDone(t,v,extra){const o=Object.assign({},S.tasks[t.id]||{},extra||{});o.done=v?(o.done||now()):0;o.t=now();if(v&&!o.date)o.date=todayISO();if(!v)delete o.date;S.tasks[t.id]=o;save();checkLevelUp()}
+function setTaskDone(t,v,extra){const x0=xpInfo().xp;const dd=IX.task[t.id]&&IX.task[t.id].d;const was=dd?dayStat(dd).st:'';
+ const o=Object.assign({},S.tasks[t.id]||{},extra||{});o.done=v?(o.done||now()):0;o.t=now();if(v&&!o.date)o.date=todayISO();if(!v)delete o.date;S.tasks[t.id]=o;save();
+ if(v){floatXP(xpInfo().xp-x0);if(dd&&was!=='done'&&dayStat(dd).st==='done'){const st=streakInfo();setTimeout(()=>celebrate('day','Day '+dd.n+' complete!','Streak: '+plural(st.cur,'day')+' · Level '+xpInfo().L),350);lastLevel=xpInfo().L;return}}
+ checkLevelUp()}
 const mustOf=d=>d.tasks.filter(t=>t.must),stretchOf=d=>d.tasks.filter(t=>!t.must);
 function dayStat(d){if(d.type!=='study')return{st:d.type,done:0,total:0,pct:0};const m=mustOf(d);const dn=m.filter(tDone);
  const dm=dn.reduce((a,t)=>a+t.min,0),tm=m.reduce((a,t)=>a+t.min,0);
@@ -450,7 +499,7 @@ function xpInfo(){let xp=0;const src={tasks:0,practice:0,quiz:0,extras:0};
  const base=75*(L-1)*L,next=75*L*(L+1);
  const title=L>=20?'Senior-ready':L>=15?'Analyst':L>=10?'Junior Analyst':L>=5?'Analyst in the making':'Trainee';
  return{xp,L,base,next,pct:(xp-base)/(next-base),title,src}}
-let lastLevel=null;function checkLevelUp(){const x=xpInfo();if(lastLevel&&x.L>lastLevel)toast('Level up! Level '+x.L+': '+x.title);lastLevel=x.L}
+let lastLevel=null;function checkLevelUp(){const x=xpInfo();if(lastLevel&&x.L>lastLevel)celebrate('level','Level up! Level '+x.L,x.title);lastLevel=x.L}
 function blockDone(bid){return IX.study.filter(d=>d.block===bid).every(d=>dayStat(d).st==='done')}
 function subjSolved(prefix,min){const sets=C.sets.filter(s=>s.id.startsWith(prefix)&&s.problems);return sets.length&&sets.every(s=>{const n=s.problems.length,ok=s.problems.filter(p=>S.prac[p.id]&&S.prac[p.id].ok).length;return ok/n>=min})}
 function proofCount(re){let n=0;for(const id in S.tasks){const o=S.tasks[id],x=IX.task[id];if(o.done&&o.proof&&x&&re.test(x.t.t))n++}return n}
@@ -543,7 +592,7 @@ const Drive=(()=>{
 function summary(){const st=streakInfo(),x=xpInfo(),p=pace();const cur=currentDay();
  return{currentDay:cur?cur.n:'finished',currentDayTitle:cur?cur.title:'',plannedToday:p.planned?p.planned.n:0,behindDays:p.behind||0,aheadDays:p.ahead||0,
   daysDone:IX.study.filter(d=>dayStat(d).st==='done').length,totalDays:IX.study.length,xp:x.xp,level:x.L,streak:st.cur,bestStreak:st.best,
-  solved:Object.values(S.prac).filter(q=>q.ok).length,applications:Object.values(S.kit.apps).filter(a=>!a.del).length,projected:projectedFinish(),postDigest:postDigest()}}
+  solved:Object.values(S.prac).filter(q=>q.ok).length,applications:Object.values(S.kit.apps).filter(a=>!a.del).length,projected:projectedFinish(),postDigest:postDigest(),openFeedback:Object.values(S.fb||{}).filter(f=>f.status==='open').map(f=>({where:f.where,text:f.text,day:f.day,created:f.created}))}}
 // for Claude (reads this file via Google Drive): what to post about next
 function postDigest(){const cur=currentDay();const posts=IX.study.flatMap(x=>x.tasks.filter(y=>y.kind==='post').map(y=>({t:y,d:x})));
  const nextP=posts.find(p=>!tDone(p.t));const lastDone=[...posts].reverse().find(p=>tDone(p.t));
@@ -628,9 +677,9 @@ function shell(){document.body.innerHTML='';const side=h('aside',{class:'side','
  document.body.append(h('a',{class:'skip',href:'#view'},'Skip to content'),h('div',{class:'shell'},side,h('div',{},top,h('main',{class:'main',id:'view',tabindex:'-1'}))),tabs)}
 function updateNav(k){document.querySelectorAll('[data-k]').forEach(a=>a.getAttribute('data-k')===k?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'))}
 function updateSideMini(){const el=$('#sidemini');if(!el)return;const st=streakInfo(),x=xpInfo();el.innerHTML='';
- add(el,[h('div',{class:'minicard'},h('div',{class:'row'},h('span',{class:'row',style:{gap:'6px',color:'var(--amber-text)',fontWeight:700}},ic('flame'),'Streak: '+plural(st.cur,'day')),h('span',{class:'tiny muted',text:st.freezes?st.freezes+' freeze':''})),
+ add(el,[h('div',{class:'minicard'},h('div',{class:'row'},h('span',{class:'row',style:{gap:'6px',color:'var(--amber-text)',fontWeight:700}},flame(20,!st.todayCounts),'Streak: '+plural(st.cur,'day')),freezeTag(st.freezes)),
   h('div',{class:'divider',style:{margin:'10px 0'}}),h('div',{class:'row'},h('b',{text:'Level '+x.L}),h('span',{class:'tiny muted',text:x.xp+' XP'})),h('div',{class:'tiny muted',style:{margin:'2px 0 6px'},text:x.title}),h('div',{class:'bar'},h('i',{style:{width:Math.round(x.pct*100)+'%'}}))),
-  h('div',{class:'syncline',id:'syncline'})]);const ts=$('#topstreak');if(ts){ts.innerHTML='';add(ts,[ic('flame','sm'),String(st.cur)]);ts.style.color='var(--amber-text)'}updateSyncUI()}
+  h('div',{class:'syncline',id:'syncline'})]);const ts=$('#topstreak');if(ts){ts.innerHTML='';add(ts,[flame(16,!st.todayCounts),String(st.cur)]);ts.style.color='var(--amber-text)'}updateSyncUI()}
 function updateSyncUI(){const el=$('#syncline');const s=Drive.status();if(el){el.innerHTML='';add(el,[ic(s.s==='err'?'x':'cloud','sm'),s.t])}const e2=$('#syncstat');if(e2)e2.textContent=s.t}
 
 /* ---------- router ---------- */
@@ -671,10 +720,10 @@ function viewDay(d){const isToday=!d;if(isToday)d=currentDay();
  if(isToday&&restDates().has(t))add(wrap,[h('div',{class:'note amber',style:{marginBottom:'14px'}},ic('coffee','sm'),' Aaj plan mein rest/off day hai. Chaho to aaram karo; continue karna bhi theek hai.')]);
  if(!isToday&&currentDay()&&currentDay().id!==d.id&&d.n>currentDay().n)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Ye aage ka din hai. Kaam kar sakte ho, par Today wala Day '+currentDay().n+' pehle khatam karna better hai. ',h('a',{href:'#/today'},'Today par jao'))]);
  const st2=streakInfo(),x=xpInfo();
- add(wrap,[h('section',{class:'card hero','aria-label':'Day progress'},h('div',{class:'ring'},ringSVG(st.pct),h('div',{class:'lbl'},h('b',{text:Math.round(st.pct*100)+'%'}),h('span',{text:'must done'}))),
+ add(wrap,[h('section',{class:'card hero','aria-label':'Day progress'},h('div',{class:'ring'+(st.pct>=1?' full':'')},ringSVG(st.pct),h('div',{class:'lbl'},h('b',{text:Math.round(st.pct*100)+'%'}),h('span',{text:'must done'}))),
   h('div',{},h('h2',{style:{marginBottom:'6px'},text:st.st==='done'?'Day complete':st.cnt+' of '+st.n+' must tasks done'}),
    h('p',{class:'muted',style:{margin:0}},st.st==='done'?'Great. Stretch tasks optional hain.':'~'+fmtMin(st.left)+' must kaam baaki'+(stretchOf(d).length?' · stretch '+fmtMin(stretchOf(d).reduce((a,t)=>a+t.min,0)):''))),
-  h('div',{class:'stats-mini'},h('div',{class:'streak'},ic('flame','lg'),h('div',{},h('div',{text:'Streak: '+plural(st2.cur,'day')}),h('div',{class:'tiny',style:{fontWeight:500},text:st2.todayCounts?'Aaj count ho gaya':'Aaj 90+ min must kaam se streak badhegi'}))),
+  h('div',{class:'stats-mini'},h('div',{class:'streak'},flame(32,!st2.todayCounts),h('div',{},h('div',{class:'row',style:{gap:'8px'}},'Streak: '+plural(st2.cur,'day'),freezeTag(st2.freezes)),h('div',{class:'tiny',style:{fontWeight:500},text:st2.todayCounts?'Aaj count ho gaya':'Aaj 90+ min must kaam se streak badhegi'}))),
    h('div',{class:'lvl'},h('div',{class:'row'},h('span',{text:'Level '+x.L+' · '+x.title}),h('span',{class:'muted',text:x.xp+' XP'})),h('div',{class:'bar',style:{marginTop:'6px'}},h('i',{style:{width:Math.round(x.pct*100)+'%'}})))))]);
  const list=h('div',{class:'stack'});
  if(st.st==='done'&&isToday===false&&currentDay()&&d.n<currentDay().n){}
@@ -726,6 +775,7 @@ function taskDetail(t,d){if(!t)return h('p',{class:'muted',text:'Task chuno.'});
   if(ui.focusProof){ui.focusProof=false;setTimeout(()=>inp.focus(),60)}}
  const note=h('textarea',{class:'input',id:'tnote',rows:'3',placeholder:'Notes: kya seekha, kahan atka, kaunsa timestamp dobara dekhna hai',onchange:e=>{const n=Object.assign({},S.tasks[t.id]||{},{note:e.target.value,t:now()});S.tasks[t.id]=n;save();toast('Note saved')}});note.value=o.note||'';
  add(box,[h('div',{class:'field',style:{margin:'12px 0'}},h('label',{for:'tnote',text:'Notes'}),note)]);
+ add(box,[h('button',{class:'btn ghost sm',style:{marginBottom:'8px'},onclick:()=>feedbackForm('Day '+d.n+' · '+t.t.slice(0,80))},ic('bulb','sm'),'Is task mein problem / feedback?')]);
  add(box,[h('div',{class:'row wrap'},h('button',{class:'btn '+(done?'':'primary'),onclick:()=>toggleTask(t,d)},ic(done?'x':'check','sm'),done?'Undo done':'Mark done'),
   done&&o.done?h('span',{class:'tiny muted',text:'Done '+fmtD(o.date||iso(new Date(o.done)))+(o.auto?' (auto)':o.manual?' (manual)':'')}):null)]);
  return box}
@@ -922,7 +972,7 @@ function viewProgress(){const wrap=h('div',{class:'wrap'});const st=streakInfo()
  const kpi=(v,l,s)=>h('div',{class:'card kpi'},h('b',{text:v}),h('span',{text:l}),s?h('div',{class:'tiny muted',style:{marginTop:'4px'},text:s}):null);
  add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Honest numbers'}),h('h1',{text:'Progress'}),h('p',{text:'Projected finish '+fmtDY(projectedFinish())+' (plan: '+fmtDY(C.meta.end)+')'})))]);
  add(wrap,[h('div',{class:'grid g4'},kpi(done+' / '+IX.study.length,'days complete',Math.round(done/IX.study.length*100)+'% of plan'),kpi(fmtMin(mins),'study time logged','done tasks ke planned minutes'),
-  kpi(String(solved),'practice items solved',tried?Math.round(firstTry/Math.max(1,solved)*100)+'% first try, no peek':'abhi shuru nahi'),kpi(st.cur+' / '+st.best,'streak / best',st.freezes?st.freezes+' freeze ready':'7 counted days = 1 freeze'))]);
+  kpi(String(solved),'practice items solved',tried?Math.round(firstTry/Math.max(1,solved)*100)+'% first try, no peek':'abhi shuru nahi'),(()=>{const k=kpi(st.cur+' / '+st.best,'streak / best',st.freezes?st.freezes+' freeze ready':'7 counted days = 1 freeze');k.querySelector('b').prepend(flame(26,!st.todayCounts),' ');return k})())]);
  // skills
  const comps=['excel','sql','powerbi','python','stats','projects','linkedin','github','career'];const sk=h('div',{class:'card'},h('h3',{text:'Skill progress'}),h('p',{class:'tiny muted',text:'Bar = us subject ke planned minutes mein se kitne complete. Accuracy = solved / attempted items.'}));
  comps.forEach(c=>{let tot=0,dn=0;IX.study.forEach(d=>d.tasks.forEach(t=>{if(t.comp===c&&t.must){tot+=t.min;if(tDone(t))dn+=t.min}}));if(!tot)return;
@@ -935,7 +985,7 @@ function viewProgress(){const wrap=h('div',{class:'wrap'});const st=streakInfo()
   h('table',{class:'tbl'},h('tbody',{},[['Tasks',x.src.tasks],['Practice',x.src.practice],['Quizzes',x.src.quiz],['Projects + applications',x.src.extras]].map(([a,b])=>h('tr',{},h('td',{text:a}),h('td',{style:{textAlign:'right',fontWeight:700},text:String(b)}))))),
   h('h3',{style:{marginTop:'18px'},text:'Activity'}),hm,h('div',{class:'row tiny muted',style:{marginTop:'6px'}},'Less',h('span',{class:'heat-legend'},['','l1','l2','l3','l4'].map(c=>h('i',{class:c}))),'More (240+ min)')))]);
  add(wrap,[h('div',{class:'card chartbox',style:{marginTop:'14px'}},h('h3',{text:'Pace: planned vs actual days'}),paceChart())]);
- add(wrap,[h('div',{class:'card'},h('h3',{text:'Badges'}),h('div',{class:'badges'},BADGES.map(([id,n,dsc,i,fn])=>{let ok=false;try{ok=fn()}catch(e){}return h('div',{class:'badge'+(ok?'':' locked')},h('div',{class:'ic'},ic(ok?i:'lock')),h('b',{text:n}),h('span',{text:dsc}))})))]);
+ add(wrap,[h('div',{class:'card'},h('h3',{text:'Badges'}),h('div',{class:'badges'},BADGES.map(([id,n,dsc,i,fn])=>{let ok=false;try{ok=fn()}catch(e){}return h('div',{class:'badge'+(ok?'':' locked')},h('div',{class:'ic'},ok&&i==='flame'?flame(26):ic(ok?i:'lock')),h('b',{text:n}),h('span',{text:dsc}))})))]);
  return wrap}
 function paceChart(){const W=900,H=240,P={l:40,r:16,t:16,b:30};const s0=C.meta.start,s1=C.meta.end;const N=daysBetween(s0,s1)+1;const xs=d=>P.l+(daysBetween(s0,d)/(N-1))*(W-P.l-P.r);const ys=v=>H-P.b-(v/IX.study.length)*(H-P.t-P.b);
  let plan='',c=0;for(let d=s0;d<=s1;d=addDays(d,1)){if(IX.date[d]&&IX.date[d].type==='study')c++;plan+=(plan?'L':'M')+xs(d).toFixed(1)+' '+ys(c).toFixed(1)}
@@ -997,6 +1047,7 @@ function viewSettings(){const wrap=h('div',{class:'wrap'});add(wrap,[h('div',{cl
   runnerCard(),
   h('div',{class:'card'},h('h3',{text:'Backup file'}),h('p',{class:'tiny muted',text:'Drive ke alawa manual JSON backup. Import merge karta hai (naya data jeet-ta hai), kuch delete nahi karta.'}),
    h('div',{class:'row wrap'},h('button',{class:'btn',onclick:exportJSON},ic('download','sm'),'Export JSON'),h('label',{class:'btn'},ic('upload','sm'),'Import JSON',h('input',{type:'file',accept:'.json,application/json',class:'sr',onchange:e=>importJSON(e.target.files[0])})))),
+  feedbackCard(),
   h('div',{class:'card'},h('h3',{text:'Danger zone'}),h('p',{class:'tiny muted',text:'Is browser ka saara progress hata deta hai. Drive file tab tak bachi rahegi jab tak agla sync na ho.'}),h('button',{class:'btn danger',onclick:()=>confirmBox('Reset all progress?','Is device ka saara DA Journey progress delete hoga. Pehle Export kar lo.','Next',()=>confirmBox('Pakka?','Ye undo nahi hoga.','Reset everything',()=>{const th=S.settings.theme;S=freshState();S.settings.theme=th;localStorage.setItem(LS,JSON.stringify(S));toast('Reset done');rerender()},true),true)},ic('trash','sm'),'Reset progress')),
   h('div',{class:'card'},h('h3',{text:'About'}),h('p',{class:'small',text:'DA Journey v'+APP_VER+' · content '+C.v}),h('p',{class:'tiny muted',text:'Plan: '+fmtDY(C.meta.start)+' to '+fmtDY(C.meta.end)+', '+IX.study.length+' study days. Practice files: Satish Dhawale (GitHub), codebasics challenges. Python content imported from the old Python trial.'})))]);
  return wrap}
@@ -1015,6 +1066,19 @@ async function boot(){loadState();applyTheme();
  if(Drive.conn())Drive.auto(true);
  if('serviceWorker' in navigator&&!DEV&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});}
 boot();
+
+/* ---------- feedback for Claude (self-improving loop) ---------- */
+function feedbackForm(where){modal(close=>{const ta=h('textarea',{class:'input',rows:'5',id:'fbtext',placeholder:'Kya problem aayi / kya better ho sakta hai? Kab hua, kitni baar, kya expect kiya tha.'});const wh=h('input',{class:'input',id:'fbwhere',value:where||'',placeholder:'Kahan (screen / day / task)'});
+ return h('div',{class:'stack'},h('h2',{text:'Feedback for Claude'}),h('p',{class:'small muted',text:'Ye note Drive backup mein jaata hai. Claude ke paas "DA Journey feedback dekho" bolo: Claude padhke root cause check karega aur system improve karega.'}),
+  h('div',{class:'field'},h('label',{for:'fbwhere',text:'Kahan'}),wh),h('div',{class:'field'},h('label',{for:'fbtext',text:'Problem / insight'}),ta),
+  h('div',{class:'row',style:{justifyContent:'flex-end'}},h('button',{class:'btn ghost',onclick:close},'Cancel'),h('button',{class:'btn primary',onclick:()=>{const v=ta.value.trim();if(v.length<5){toast('Thoda detail likho');return}
+   S.fb['f'+now().toString(36)]={text:v,where:wh.value.trim(),day:(currentDay()||{}).n||0,status:'open',created:new Date().toISOString(),t:now()};save();close();toast('Feedback saved. Claude ko batao.');rerender()}},'Save')))})}
+function feedbackCard(){const items=Object.entries(S.fb||{}).sort((a,b)=>(b[1].t||0)-(a[1].t||0));const open=items.filter(([,f])=>f.status==='open');
+ return h('div',{class:'card'},h('div',{class:'row between'},h('h3',{style:{margin:0},text:'Feedback for Claude'}),h('span',{class:'est',text:open.length+' open'})),
+  h('p',{class:'tiny muted',text:'Self-improving app: jo bhi problem ya idea aaye yahan likho (ya chat mein batao). Claude root cause dhoondh ke poore system mein fix karega.'}),
+  h('button',{class:'btn primary sm',onclick:()=>feedbackForm('')},ic('plus','sm'),'New feedback'),
+  items.length?h('div',{style:{marginTop:'10px'}},items.slice(0,8).map(([id,f])=>h('div',{class:'checkrow'},h('button',{class:'check'+(f.status==='done'?' on':''),'aria-label':'Mark resolved: '+f.text.slice(0,40),onclick:()=>{S.fb[id]=Object.assign({},f,{status:f.status==='done'?'open':'done',t:now()});save();rerender()}},ic('check','sm')),
+   h('div',{},h('div',{class:'small',style:{textDecoration:f.status==='done'?'line-through':''},text:f.text}),h('div',{class:'tiny muted',text:(f.where||'')+' · '+(f.created||'').slice(0,10)}))))):null)}
 
 </script>
 </body>
