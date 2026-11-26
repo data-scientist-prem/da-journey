@@ -295,6 +295,16 @@ html[data-theme="dark"] .frz{color:#7dd3fc}
 @keyframes barflow{to{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){.flm .fo,.flm .fi,.frz svg,.cbox .big,.conf,.badge .ic::after,.lvl .bar>i,.minicard .bar>i{animation:none!important}.conf{display:none}}
 
+.guide{border:1px solid var(--border);border-radius:14px;padding:4px 16px;margin:4px 0 12px;background:var(--surface)}
+.guide .gsec{padding:10px 0;border-bottom:1px solid var(--border)}
+.guide .gsec:last-child{border-bottom:0}
+.guide .glab{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.guide p{margin:0;font-size:.92rem;line-height:1.5}
+.guide ol{margin:0;padding-left:20px;font-size:.92rem;line-height:1.55}
+.guide ol li+li{margin-top:3px}
+.guide .gdone .glab{color:var(--primary-text)}
+.guide ul{margin:6px 0 0;padding-left:20px;font-size:.9rem;line-height:1.5}
+
 </style>
 </head>
 <body>
@@ -302,7 +312,7 @@ html[data-theme="dark"] .frz{color:#7dd3fc}
 <script>
 'use strict';
 /* ===== DA Journey v2 ===== */
-const APP_VER='2026.11.25-2';
+const APP_VER='2026.11.26-1';
 const CFG={
  CLIENT_ID:'331264298614-jr5f5ib5o7jkaqrbs3k7nla4gm7lsrv2.apps.googleusercontent.com', // set after the "DA Journey" Google Cloud project is created
  OWNER_H:'e3f2701c4914321da0c06ace2cb5fad3a3b71419d9da7f3de73f83a503bdaa1b', // SHA-256 of the owner's Google email (same owner as Hunter System)
@@ -631,15 +641,15 @@ const Grade={
    for(let j=0;j<ta.length;j++){if(!Grade.tokEq(ta[j],tb[j])){same=false;break}if(ta[j]!==tb[j])nd=true}}
    if(same)return nd?{ok:true,note:'Numbers match; only the format differs (e.g. 16 vs 16.0).'}:{ok:true}}return{ok:false}},
  cell:v=>typeof v==='number'?'n'+(Math.round(v*1e6)/1e6):(v===null?'null':'s'+v),
- sql(p,res){if(!res||res.error)return{ok:false,msg:res&&res.error};if(res.none)return{ok:false,msg:'Query ne koi result table nahi diya. End mein SELECT chahiye.'};const ex=p.ex;
-  if(p.names){const a=res.cols.map(c=>String(c).toLowerCase()).join(','),b=ex.cols.map(c=>String(c).toLowerCase()).join(',');if(a!==b)return{ok:false,msg:'Column names alag hain. Expected: '+ex.cols.join(', ')}}
-  if(res.cols.length!==ex.cols.length)return{ok:false,msg:`Expected ${ex.cols.length} column(s), mile ${res.cols.length}.`};
+ sql(p,res){if(!res||res.error)return{ok:false,msg:res&&res.error};if(res.none)return{ok:false,msg:'The query returned no result table. It must end with a SELECT.'};const ex=p.ex;
+  if(p.names){const a=res.cols.map(c=>String(c).toLowerCase()).join(','),b=ex.cols.map(c=>String(c).toLowerCase()).join(',');if(a!==b)return{ok:false,msg:'Column names differ. Expected: '+ex.cols.join(', ')}}
+  if(res.cols.length!==ex.cols.length)return{ok:false,msg:`Expected ${ex.cols.length} column(s), got ${res.cols.length}.`};
   const ra=res.rows.map(r=>r.map(Grade.cell).join('\u0001')),rb=ex.rows.map(r=>r.map(Grade.cell).join('\u0001'));
-  if(ra.length!==rb.length)return{ok:false,msg:`Expected ${rb.length} row(s), mile ${ra.length}.`};
+  if(ra.length!==rb.length)return{ok:false,msg:`Expected ${rb.length} row(s), got ${ra.length}.`};
   if(p.ordered){let same=true;for(let i=0;i<ra.length;i++)if(ra[i]!==rb[i]){same=false;break}
-   if(same)return{ok:true};const sa=[...ra].sort(),sb=[...rb].sort();if(sa.every((x,i)=>x===sb[i]))return{ok:false,msg:'Rows sahi hain, order galat hai (ORDER BY check karo).'};return{ok:false,msg:'Rows match nahi karti.'}}
-  ra.sort();rb.sort();for(let i=0;i<ra.length;i++)if(ra[i]!==rb[i])return{ok:false,msg:'Rows match nahi karti.'};return{ok:true}},
- drill(it,v){v=String(v||'').trim();if(!v)return null;if(it.type==='num'){const n=parseFloat(v.replace(/[,₹\s%]/g,''));if(isNaN(n))return{ok:false,msg:'Sirf number likho.'};
+   if(same)return{ok:true};const sa=[...ra].sort(),sb=[...rb].sort();if(sa.every((x,i)=>x===sb[i]))return{ok:false,msg:'Rows are correct but the order is wrong (check ORDER BY).'};return{ok:false,msg:'Rows do not match.'}}
+  ra.sort();rb.sort();for(let i=0;i<ra.length;i++)if(ra[i]!==rb[i])return{ok:false,msg:'Rows do not match.'};return{ok:true}},
+ drill(it,v){v=String(v||'').trim();if(!v)return null;if(it.type==='num'){const n=parseFloat(v.replace(/[,₹\s%]/g,''));if(isNaN(n))return{ok:false,msg:'Enter a number only.'};
   const tol=it.tol!=null?it.tol:0.01;return{ok:Math.abs(n-it.ans)<=Math.max(tol,Math.abs(it.ans)*1e-9)}}
   const a=v.toLowerCase().replace(/\s+/g,' '),b=String(it.ans).toLowerCase().replace(/\s+/g,' ');return{ok:a===b}}};
 
@@ -691,7 +701,7 @@ function route(keep){if(!C)return;if(!unlocked){lockView();return}
  const map={today:()=>viewDay(null),day:()=>viewDay(IX.day[hs[1]]),plan:viewPlan,practice:()=>viewLibrary(hs[1]),set:()=>viewSet(hs[1],hs[2]),
   interview:()=>viewInterview(hs[1]),project:()=>viewProject(hs[1]),progress:viewProgress,kit:()=>viewKit(hs[1]),settings:viewSettings};
  const navk={day:'plan',set:'practice',interview:'practice',project:'practice'}[k]||k;
- updateNav(navk);try{add(v,[(map[k]||map.today)()])}catch(e){console.error(e);add(v,[h('div',{class:'card'},h('h2',{text:'Kuch galat ho gaya'}),h('pre',{class:'code',text:String(e.stack||e)}))])}
+ updateNav(navk);try{add(v,[(map[k]||map.today)()])}catch(e){console.error(e);add(v,[h('div',{class:'card'},h('h2',{text:'Something went wrong'}),h('pre',{class:'code',text:String(e.stack||e)}))])}
  updateSideMini();if(!keep||curView!==location.hash){window.scrollTo(0,0)}else window.scrollTo(0,y);curView=location.hash;
  document.title=({today:'Today',plan:'Plan',practice:'Practice',progress:'Progress',kit:'Career kit',settings:'Settings'}[navk]||'DA Journey')+' · DA Journey'}
 window.addEventListener('hashchange',()=>route(false));
@@ -700,35 +710,35 @@ window.addEventListener('hashchange',()=>route(false));
 function lockView(){document.body.innerHTML='';const msg=sessionStorage.getItem('daj-lockmsg')||'';sessionStorage.removeItem('daj-lockmsg');
  const g=h('button',{class:'gbtn',onclick:()=>Drive.signIn()},h('span',{html:'<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>'}),'Sign in with Google');
  document.body.appendChild(h('div',{class:'lockwrap'},h('div',{class:'card lockcard'},h('div',{class:'logo'},ic('logo','lg')),h('h1',{text:'DA Journey'}),
-  h('p',{class:'muted',text:'Ye app private hai. Owner ke Google account se sign in karo. Har device par sirf ek baar.'}),
-  Drive.notReady()?h('p',{class:'note amber',text:'Google sign-in abhi configure nahi hua (Cloud project setup pending).'}):g,
+  h('p',{class:'muted',text:'This app is private. Sign in with the owner\'s Google account. Once per device.'}),
+  Drive.notReady()?h('p',{class:'note amber',text:'Google sign-in is not configured yet (Cloud project setup pending).'}):g,
   msg?h('p',{class:'err',style:{marginTop:'12px'},text:msg}):null)))}
 
 /* ---------- day view (Today + any day) ---------- */
 function ringSVG(p,size){const r=46,c=2*Math.PI*r;return h('div',{html:`<svg viewBox="0 0 112 112" aria-hidden="true"><circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--surface3)" stroke-width="10"/><circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--primary)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-Math.min(1,p))}" style="transition:stroke-dashoffset .5s ease-out"/></svg>`}).firstChild}
 function blockOf(d){return C.meta.blocks.find(b=>b.id===d.block)||{title:''}}
 function paceText(d){const t=todayISO();const dd=daysBetween(t,d.date);
- if(dd===0)return'Planned for today';if(dd>0)return'Planned for '+fmtD(d.date)+(dd===1?' (kal)':' ('+dd+' din baad)');return'Planned for '+fmtD(d.date)+' ('+(-dd)+' din pehle)'}
+ if(dd===0)return'Planned for today';if(dd>0)return'Planned for '+fmtD(d.date)+(dd===1?' (tomorrow)':' (in '+dd+' days)');return'Planned for '+fmtD(d.date)+' ('+(-dd)+' days ago)'}
 function viewDay(d){const isToday=!d;if(isToday)d=currentDay();
- if(!d)return h('div',{class:'card donecard'},h('div',{class:'big'},ic('trophy','lg')),h('h1',{text:'Saare 109 din complete!'}),h('p',{class:'muted',text:'Journey complete. Applications aur interviews par focus karo; Career kit tracker use karte raho.'}));
+ if(!d)return h('div',{class:'card donecard'},h('div',{class:'big'},ic('trophy','lg')),h('h1',{text:'All 109 days complete!'}),h('p',{class:'muted',text:'Journey complete. Focus on applications and interviews; keep using the Career kit tracker.'}));
  if(d.type!=='study')return restDayView(d);
  const st=dayStat(d),p=pace(),t=todayISO();const wrap=h('div',{class:'wrap'});
  const idx=IX.study.indexOf(d),prev=IX.study[idx-1],next=IX.study[idx+1];
  let paceLine=paceText(d);if(isToday&&p.diff<0)paceLine+=' · '+plural(-p.diff,'day')+' behind';else if(isToday&&p.diff>0)paceLine+=' · '+plural(p.diff,'day')+' ahead';
  add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(isToday?'Today · ':'')+blockOf(d).title+' · Day '+d.n+' of '+IX.study.length}),h('h1',{text:d.title}),h('p',{text:paceLine})),
   h('div',{class:'row'},prev?h('a',{class:'btn sm',href:'#/day/'+prev.id,'aria-label':'Previous day'},ic('left','sm'),'Day '+prev.n):null,next?h('a',{class:'btn sm',href:'#/day/'+next.id,'aria-label':'Next day'},'Day '+next.n,ic('right','sm')):null))]);
- if(isToday&&restDates().has(t))add(wrap,[h('div',{class:'note amber',style:{marginBottom:'14px'}},ic('coffee','sm'),' Aaj plan mein rest/off day hai. Chaho to aaram karo; continue karna bhi theek hai.')]);
- if(!isToday&&currentDay()&&currentDay().id!==d.id&&d.n>currentDay().n)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Ye aage ka din hai. Kaam kar sakte ho, par Today wala Day '+currentDay().n+' pehle khatam karna better hai. ',h('a',{href:'#/today'},'Today par jao'))]);
+ if(isToday&&restDates().has(t))add(wrap,[h('div',{class:'note amber',style:{marginBottom:'14px'}},ic('coffee','sm'),' Today is a rest/off day in the plan. Rest, or continue if you want to.')]);
+ if(!isToday&&currentDay()&&currentDay().id!==d.id&&d.n>currentDay().n)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'This is a future day. You can work on it, but finish Today\'s Day '+currentDay().n+' first. ',h('a',{href:'#/today'},'Go to Today'))]);
  const st2=streakInfo(),x=xpInfo();
  add(wrap,[h('section',{class:'card hero','aria-label':'Day progress'},h('div',{class:'ring'+(st.pct>=1?' full':'')},ringSVG(st.pct),h('div',{class:'lbl'},h('b',{text:Math.round(st.pct*100)+'%'}),h('span',{text:'must done'}))),
   h('div',{},h('h2',{style:{marginBottom:'6px'},text:st.st==='done'?'Day complete':st.cnt+' of '+st.n+' must tasks done'}),
-   h('p',{class:'muted',style:{margin:0}},st.st==='done'?'Great. Stretch tasks optional hain.':'~'+fmtMin(st.left)+' must kaam baaki'+(stretchOf(d).length?' · stretch '+fmtMin(stretchOf(d).reduce((a,t)=>a+t.min,0)):''))),
-  h('div',{class:'stats-mini'},h('div',{class:'streak'},flame(32,!st2.todayCounts),h('div',{},h('div',{class:'row',style:{gap:'8px'}},'Streak: '+plural(st2.cur,'day'),freezeTag(st2.freezes)),h('div',{class:'tiny',style:{fontWeight:500},text:st2.todayCounts?'Aaj count ho gaya':'Aaj 90+ min must kaam se streak badhegi'}))),
+   h('p',{class:'muted',style:{margin:0}},st.st==='done'?'Great. Stretch tasks are optional.':'~'+fmtMin(st.left)+' of must tasks left'+(stretchOf(d).length?' · stretch '+fmtMin(stretchOf(d).reduce((a,t)=>a+t.min,0)):''))),
+  h('div',{class:'stats-mini'},h('div',{class:'streak'},flame(32,!st2.todayCounts),h('div',{},h('div',{class:'row',style:{gap:'8px'}},'Streak: '+plural(st2.cur,'day'),freezeTag(st2.freezes)),h('div',{class:'tiny',style:{fontWeight:500},text:st2.todayCounts?'Today counts':'90+ min of must tasks today extends your streak'}))),
    h('div',{class:'lvl'},h('div',{class:'row'},h('span',{text:'Level '+x.L+' · '+x.title}),h('span',{class:'muted',text:x.xp+' XP'})),h('div',{class:'bar',style:{marginTop:'6px'}},h('i',{style:{width:Math.round(x.pct*100)+'%'}})))))]);
  const list=h('div',{class:'stack'});
  if(st.st==='done'&&isToday===false&&currentDay()&&d.n<currentDay().n){}
- if(st.st==='done')add(list,[h('div',{class:'card donecard'},h('div',{class:'big'},ic('check','lg')),h('h2',{text:'Day '+d.n+' complete'}),h('p',{class:'muted',text:'Must kaam khatam. Agla din abhi shuru kar sakte ho, ya stretch karo.'}),
-  next?h('a',{class:'btn primary',href:isToday?'#/today':'#/day/'+next.id,onclick:()=>{if(isToday)setTimeout(rerender,0)}},'Day '+next.n+' shuru karo',ic('right','sm')):null)]);
+ if(st.st==='done')add(list,[h('div',{class:'card donecard'},h('div',{class:'big'},ic('check','lg')),h('h2',{text:'Day '+d.n+' complete'}),h('p',{class:'muted',text:'Must tasks done. You can start the next day now, or do the stretch tasks.'}),
+  next?h('a',{class:'btn primary',href:isToday?'#/today':'#/day/'+next.id,onclick:()=>{if(isToday)setTimeout(rerender,0)}},'Start Day '+next.n,ic('right','sm')):null)]);
  const sel=ui.sel[d.id]&&IX.task[ui.sel[d.id]]?IX.task[ui.sel[d.id]].t:(mustOf(d).find(t=>!tDone(t))||d.tasks[0]);
  const panel=h('div',{class:'card detail sticky',id:'detail'});
  const select=t=>{ui.sel[d.id]=t.id;document.querySelectorAll('.task').forEach(r=>r.setAttribute('aria-selected',r.dataset.id===t.id));panel.innerHTML='';add(panel,[taskDetail(t,d)]);
@@ -739,58 +749,63 @@ function viewDay(d){const isToday=!d;if(isToday)d=currentDay();
  add(panel,[taskDetail(sel,d)]);
  add(wrap,[h('div',{class:'split'},list,panel)]);return wrap}
 function restDayView(d){return h('div',{class:'wrap'},h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:fmtD(d.date)}),h('h1',{text:d.title}),h('p',{text:d.note||''}))),
- h('div',{class:'card donecard'},h('div',{class:'big'},ic('coffee','lg')),h('h2',{text:d.type==='off'?'DA tasks nahi':'Rest day'}),h('p',{class:'muted',text:'Streak in din nahi tootegi.'}),h('a',{class:'btn',href:'#/plan'},'Plan dekho')))}
+ h('div',{class:'card donecard'},h('div',{class:'big'},ic('coffee','lg')),h('h2',{text:d.type==='off'?'No DA tasks':'Rest day'}),h('p',{class:'muted',text:'Your streak does not break on these days.'}),h('a',{class:'btn',href:'#/plan'},'View plan')))}
 function taskMeta(t){const m=[chip(t.comp)];const pr=taskProgress(t);
  if(pr){m.push(h('span',{class:'chip plain'},ic('target','sm'),pr.n?pr.ok+'/'+pr.n+' solved':'',pr.quiz?(pr.n?' · ':'')+(pr.qd?'quiz done':'quiz'):''))}
  if(t.proof)m.push(h('span',{class:'chip '+(S.tasks[t.id]&&S.tasks[t.id].proof?'ok':'plain')},ic('link','sm'),'proof'));
  return m}
 function toggleTask(t,d){if(tDone(t)){setTaskDone(t,false);rerender();return}
- if(t.proof&&!(S.tasks[t.id]&&S.tasks[t.id].proof)){ui.sel[d.id]=t.id;ui.focusProof=true;rerender();toast('Pehle proof link daalo (GitHub/LinkedIn URL)');return}
- const pr=taskProgress(t);if(pr&&!pr.complete){confirmBox('Practice abhi adhoori hai',`${pr.res}/${pr.n} items resolve hue${pr.quiz&&!pr.qd?', quiz baaki':''}. Phir bhi done mark karein? (Practice stats honest rahenge.)`,'Mark done',()=>{setTaskDone(t,true,{manual:true});rerender()});return}
- if(t.kind==='log'){const l=S.logs[d.id];if(!l||l.text.trim().length<20){ui.sel[d.id]=t.id;rerender();setTimeout(()=>{const ta=$('#daylog');ta&&ta.focus()},50);toast('Daily log 2-3 lines likho, task khud tick hoga');return}}
+ if(t.proof&&!(S.tasks[t.id]&&S.tasks[t.id].proof)){ui.sel[d.id]=t.id;ui.focusProof=true;rerender();toast('Add the proof link first (GitHub/LinkedIn URL)');return}
+ const pr=taskProgress(t);if(pr&&!pr.complete){confirmBox('Practice is not finished',`${pr.res}/${pr.n} items resolved${pr.quiz&&!pr.qd?', quiz pending':''}. Mark done anyway? (Practice stats stay accurate.)`,'Mark done',()=>{setTaskDone(t,true,{manual:true});rerender()});return}
+ if(t.kind==='log'){const l=S.logs[d.id];if(!l||l.text.trim().length<20){ui.sel[d.id]=t.id;rerender();setTimeout(()=>{const ta=$('#daylog');ta&&ta.focus()},50);toast('Write 2-3 lines in the daily log; the task ticks itself');return}}
  setTaskDone(t,true);rerender()}
 function taskRow(t,d,selected,select){const done=tDone(t);const pr=taskProgress(t);
  const ck=h('button',{class:'check'+(done?' on':pr&&pr.res&&!done?' part':''),'aria-label':(done?'Undo: ':'Mark done: ')+t.t,'aria-pressed':String(done),onclick:e=>{e.stopPropagation();toggleTask(t,d)}},ic('check','sm'));
  const row=h('div',{class:'task'+(done?' done':''),role:'button',tabindex:'0','data-id':t.id,'aria-selected':String(!!selected),onclick:()=>select(t),onkeydown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(t)}}},
   ck,h('div',{},h('div',{class:'ttl',text:t.t}),h('div',{class:'meta'},taskMeta(t))),h('span',{class:'est'},ic(KIND_IC[t.kind]||'star','sm'),' ',t.est||fmtMin(t.min)));return row}
+function taskGuide(g){return h('div',{class:'guide'},
+ h('div',{class:'gsec'},h('div',{class:'glab',text:'What'}),h('p',{text:g.what}),g.items?h('ul',{},g.items.map(x=>h('li',{text:x}))):null),
+ h('div',{class:'gsec'},h('div',{class:'glab',text:'Why'}),h('p',{text:g.why})),
+ h('div',{class:'gsec'},h('div',{class:'glab',text:'How'}),h('ol',{},g.how.map(x=>h('li',{text:x})))),
+ h('div',{class:'gsec gdone'},h('div',{class:'glab',text:'Done when'}),h('p',{text:g.done})))}
 function isVideo(u){return /youtu\.?be|youtube\.com/.test(u)}
-function taskDetail(t,d){if(!t)return h('p',{class:'muted',text:'Task chuno.'});const o=S.tasks[t.id]||{};const done=tDone(t);const box=h('div',{});
+function taskDetail(t,d){if(!t)return h('p',{class:'muted',text:'Choose a task.'});const o=S.tasks[t.id]||{};const done=tDone(t);const box=h('div',{});
  add(box,[h('div',{class:'row wrap',style:{marginBottom:'10px'}},taskMeta(t),h('span',{class:'chip plain',text:t.must?'Must':'Stretch'}),h('span',{class:'chip plain'},ic('timer','sm'),t.est||fmtMin(t.min))),h('h2',{text:t.t})]);
+ if(t.g)add(box,[taskGuide(t.g)]);
  if(t.detail)add(box,[h('p',{class:'muted',text:t.detail})]);
  if(t.links&&t.links.length)add(box,[h('div',{class:'reslist'},t.links.map(l=>h('a',{class:'res',href:l.u,target:'_blank',rel:'noopener'},ic(isVideo(l.u)?'video':'ext'),h('div',{style:{flex:1,minWidth:0}},h('div',{text:l.t}),h('div',{class:'sub',text:l.u.replace(/^https?:\/\/(www\.)?/,'').slice(0,60)})),ic('ext','sm'))))]);
  // in-app actions
  const acts=h('div',{class:'row wrap',style:{margin:'10px 0'}});
- if(t.set){const pr=taskProgress(t);add(acts,[h('a',{class:'btn primary',href:'#/set/'+t.set+'/'+t.id},ic('play','sm'),pr&&pr.res?'Practice continue karo':'Practice shuru karo')])}
- if(t.ref_project)add(acts,[h('a',{class:'btn',href:'#/project/'+t.ref_project},ic('tool','sm'),'Project brief kholo')]);
- if(t.ref_bank)add(acts,[h('a',{class:'btn',href:'#/interview/'+t.ref_bank},ic('mic','sm'),'Interview bank kholo')]);
+ if(t.set){const pr=taskProgress(t);add(acts,[h('a',{class:'btn primary',href:'#/set/'+t.set+'/'+t.id},ic('play','sm'),pr&&pr.res?'Continue practice':'Start practice')])}
+ if(t.ref_project)add(acts,[h('a',{class:'btn',href:'#/project/'+t.ref_project},ic('tool','sm'),'Open project brief')]);
+ if(t.ref_bank)add(acts,[h('a',{class:'btn',href:'#/interview/'+t.ref_bank},ic('mic','sm'),'Open interview bank')]);
  if(t.kind==='apply')add(acts,[h('a',{class:'btn',href:'#/kit/tracker'},ic('send','sm'),'Application tracker')]);
  if(acts.childNodes.length)box.appendChild(acts);
  if(t.tpl&&IX.tpl[t.tpl]){const tp=IX.tpl[t.tpl];add(box,[h('details',{class:'mini',open:true},h('summary',{text:'Template: '+tp.title}),h('div',{class:'tpl',text:tp.body}),h('button',{class:'btn sm',onclick:()=>copyText(tp.body)},ic('copy','sm'),'Copy'))])}
  if(t.kind==='engage'&&C.kit.linkedin_rhythm)add(box,[h('div',{class:'note small'},h('b',{text:'LinkedIn rhythm: '}),C.kit.linkedin_rhythm.join(' · '))]);
  if(t.kind==='post')add(box,[postKit(t,d)]);
- if(t.kind==='log')add(box,[h('p',{class:'note small',text:'Neeche wale Daily log box mein likho; 20+ characters par ye task khud tick hoga.'})]);
- if(t.proof){const inp=h('input',{class:'input',id:'proof',type:'url',placeholder:'https://github.com/... ya LinkedIn post link',value:o.proof||''});const er=h('div',{class:'err'});
-  const sv=()=>{const v=inp.value.trim();if(v&&!/^https?:\/\/\S+\.\S+/.test(v)){er.textContent='Valid link chahiye (https://...)';return}er.textContent='';const n=Object.assign({},S.tasks[t.id]||{},{proof:v,t:now()});S.tasks[t.id]=n;save();toast(v?'Proof saved':'Proof removed');rerender()};
-  add(box,[h('div',{class:'field',style:{margin:'12px 0'}},h('label',{for:'proof',text:'Proof link (required)'}),h('div',{class:'row'},inp,h('button',{class:'btn',onclick:sv},'Save')),er,h('div',{class:'help',text:'Isse Career kit ke Proof wall mein dikhega; recruiters ko dikhane layak kaam.'}))]);
+ if(t.proof){const inp=h('input',{class:'input',id:'proof',type:'url',placeholder:'https://github.com/... or a LinkedIn post link',value:o.proof||''});const er=h('div',{class:'err'});
+  const sv=()=>{const v=inp.value.trim();if(v&&!/^https?:\/\/\S+\.\S+/.test(v)){er.textContent='Enter a valid link (https://...)';return}er.textContent='';const n=Object.assign({},S.tasks[t.id]||{},{proof:v,t:now()});S.tasks[t.id]=n;save();toast(v?'Proof saved':'Proof removed');rerender()};
+  add(box,[h('div',{class:'field',style:{margin:'12px 0'}},h('label',{for:'proof',text:'Proof link (required)'}),h('div',{class:'row'},inp,h('button',{class:'btn',onclick:sv},'Save')),er,h('div',{class:'help',text:'Shows on the Career kit proof wall: work worth showing recruiters.'}))]);
   if(ui.focusProof){ui.focusProof=false;setTimeout(()=>inp.focus(),60)}}
- const note=h('textarea',{class:'input',id:'tnote',rows:'3',placeholder:'Notes: kya seekha, kahan atka, kaunsa timestamp dobara dekhna hai',onchange:e=>{const n=Object.assign({},S.tasks[t.id]||{},{note:e.target.value,t:now()});S.tasks[t.id]=n;save();toast('Note saved')}});note.value=o.note||'';
+ const note=h('textarea',{class:'input',id:'tnote',rows:'3',placeholder:'Notes (optional)',onchange:e=>{const n=Object.assign({},S.tasks[t.id]||{},{note:e.target.value,t:now()});S.tasks[t.id]=n;save();toast('Note saved')}});note.value=o.note||'';
  add(box,[h('div',{class:'field',style:{margin:'12px 0'}},h('label',{for:'tnote',text:'Notes'}),note)]);
- add(box,[h('button',{class:'btn ghost sm',style:{marginBottom:'8px'},onclick:()=>feedbackForm('Day '+d.n+' · '+t.t.slice(0,80))},ic('bulb','sm'),'Is task mein problem / feedback?')]);
+ add(box,[h('button',{class:'btn ghost sm',style:{marginBottom:'8px'},onclick:()=>feedbackForm('Day '+d.n+' · '+t.t.slice(0,80))},ic('bulb','sm'),'Problem or feedback on this task?')]);
  add(box,[h('div',{class:'row wrap'},h('button',{class:'btn '+(done?'':'primary'),onclick:()=>toggleTask(t,d)},ic(done?'x':'check','sm'),done?'Undo done':'Mark done'),
   done&&o.done?h('span',{class:'tiny muted',text:'Done '+fmtD(o.date||iso(new Date(o.done)))+(o.auto?' (auto)':o.manual?' (manual)':'')}):null)]);
  return box}
-function logCard(d){const l=S.logs[d.id]||{};const ta=h('textarea',{class:'input',id:'daylog',rows:'4',placeholder:'2-5 lines: aaj kya seekha, kahan atka, kal kya pehle karna hai.'});ta.value=l.text||'';
+function logCard(d){const l=S.logs[d.id]||{};const ta=h('textarea',{class:'input',id:'daylog',rows:'4',placeholder:'2-5 lines: what you learned today, where you got stuck.'});ta.value=l.text||'';
  const st=h('span',{class:'tiny muted',text:l.t?'Saved '+fmtTime(l.t):''});
  ta.addEventListener('input',()=>{clearTimeout(ui.dayLogT);ui.dayLogT=setTimeout(()=>{S.logs[d.id]={text:ta.value,t:now()};const lt=d.tasks.find(x=>x.kind==='log');
   if(lt&&ta.value.trim().length>=20&&!tDone(lt)){setTaskDone(lt,true,{auto:true});toast('Daily log task done');rerender();return}save();st.textContent='Saved '+fmtTime(now())},700)});
- return h('section',{class:'card'},h('div',{class:'row between'},h('h3',{style:{margin:0}},'Daily log · Day '+d.n),st),h('p',{class:'tiny muted',style:{margin:'4px 0 8px'},text:'Ye log Drive backup mein jaata hai, taaki Claude bhi padh ke help kar sake.'}),ta)}
+ return h('section',{class:'card'},h('div',{class:'row between'},h('h3',{style:{margin:0}},'Daily log · Day '+d.n),st),h('p',{class:'tiny muted',style:{margin:'4px 0 8px'},text:'This log goes into the Drive backup so Claude can read it and help.'}),ta)}
 
 /* ---------- plan ---------- */
 function viewPlan(){const wrap=h('div',{class:'wrap'});const done=IX.study.filter(d=>dayStat(d).st==='done').length;const p=pace();const pf=projectedFinish();const cur=currentDay();
  add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Roadmap v2 · '+fmtDY(C.meta.start)+' to '+fmtDY(C.meta.end)}),h('h1',{text:'Plan'}),h('p',{text:done+' of '+IX.study.length+' days complete · projected finish '+fmtDY(pf)+(p.diff?(' ('+(p.diff<0?(-p.diff)+' behind':p.diff+' ahead')+')'):'')})),
   cur?h('a',{class:'btn primary',href:'#/today'},'Today: Day '+cur.n):null)]);
  add(wrap,[h('div',{class:'card',style:{marginBottom:'20px'}},h('div',{class:'row between'},h('b',{text:'Overall'}),h('span',{class:'est',text:Math.round(done/IX.study.length*100)+'%'})),h('div',{class:'bar',style:{marginTop:'8px'}},h('i',{style:{width:(done/IX.study.length*100)+'%'}})),
-  h('p',{class:'tiny muted',style:{margin:'8px 0 0'},text:'Plan task-based hai: jo din khatam nahi hua wahi Today rahega. Date sirf reference hai. Sunday rest; 7-8 Dec Milestone 3.'}))]);
+  h('p',{class:'tiny muted',style:{margin:'8px 0 0'},text:'The plan is task-based: an unfinished day stays as Today. Dates are only a reference. Sunday rest; 7-8 Dec Milestone 3.'}))]);
  C.meta.blocks.forEach(b=>{const days=C.days.filter(d=>d.block===b.id);const sd=days.filter(d=>d.type==='study');const bd=sd.filter(d=>dayStat(d).st==='done').length;
   add(wrap,[h('section',{class:'block'},h('div',{class:'blockhead'},h('div',{},h('h2',{style:{margin:0},text:b.title}),h('div',{class:'small muted',text:b.dates+' · '+sd.length+' study days'})),
    h('div',{style:{minWidth:'180px'}},h('div',{class:'row between small'},h('span',{class:'muted',text:bd+'/'+sd.length}),h('b',{text:Math.round(bd/sd.length*100)+'%'})),h('div',{class:'bar'},h('i',{style:{width:(bd/sd.length*100)+'%'}})))),
@@ -815,17 +830,17 @@ function postContextText(t,d){const m=postMaterial(t,d);const x=xpInfo(),st=stre
   'Learned: '+(m.learned.join('; ')||'-'),'Built: '+(m.built.join('; ')||'-'),'Practice: '+m.solved+'/'+m.tried+' items solved'+(m.quizzes.length?'; quizzes '+m.quizzes.join(', '):''),
   'Proof links: '+(m.proofs.join('; ')||'-'),'My logs:',...(m.logs.length?m.logs:['-'])].join('\n')}
 function postKit(t,d){const m=postMaterial(t,d);const box=h('details',{class:'mini',open:true,style:{margin:'10px 0'}},h('summary',{text:'Post kit · '+m.range}));
- add(box,[h('p',{class:'small',style:{margin:'8px 0'}},h('b',{text:'Claude ke saath: '}),'chat mein bolo "DA Journey ka LinkedIn post banao". Claude Google Drive se tumhari progress file padhega aur draft, visuals (carousel PDF/chart) aur screenshot list dega. Sync on rehna chahiye.'),
-  h('div',{class:'grid g2',style:{gap:'8px'}},h('div',{class:'note small'},h('b',{text:'Seekha'}),h('ul',{style:{margin:'4px 0 0',paddingLeft:'18px'}},(m.learned.length?m.learned.slice(-6):['abhi kuch tick nahi hua']).map(x=>h('li',{text:x.slice(0,90)})))),
+ add(box,[h('p',{class:'small',style:{margin:'8px 0'}},h('b',{text:'With Claude: '}),'ask in chat for your DA Journey LinkedIn post. Claude reads your progress file from Google Drive and gives you a draft, visuals (carousel PDF/chart) and a screenshot list. Keep sync on.'),
+  h('div',{class:'grid g2',style:{gap:'8px'}},h('div',{class:'note small'},h('b',{text:'Learned'}),h('ul',{style:{margin:'4px 0 0',paddingLeft:'18px'}},(m.learned.length?m.learned.slice(-6):['nothing ticked yet']).map(x=>h('li',{text:x.slice(0,90)})))),
    h('div',{class:'note small'},h('b',{text:'Practice + proof'}),h('div',{text:m.solved+'/'+m.tried+' items solved'}),m.quizzes.map(q=>h('div',{text:q})),h('div',{text:plural(m.proofs.length,'proof link')}))),
-  h('p',{class:'tiny muted',style:{margin:'8px 0'},text:'Screenshot ideas: tumhara dashboard/pivot, SQL query + result, GitHub README, ya is app ka Progress page (streak + skill bars).'}),
-  h('button',{class:'btn sm',onclick:()=>copyText(postContextText(t,d))},ic('copy','sm'),'Copy context (backup, agar Drive sync off ho)')]);return box}
+  h('p',{class:'tiny muted',style:{margin:'8px 0'},text:'Screenshot ideas: your dashboard/pivot, a SQL query + result, a GitHub README, or this app\'s Progress page (streak + skill bars).'}),
+  h('button',{class:'btn sm',onclick:()=>copyText(postContextText(t,d))},ic('copy','sm'),'Copy context (backup, if Drive sync is off)')]);return box}
 
 /* ---------- practice library ---------- */
 const LIBTABS=[['python','Python'],['sql','SQL'],['excel','Excel'],['powerbi','Power BI'],['stats','Stats'],['quiz','Quizzes'],['interview','Interview'],['projects','Projects'],['resources','Resources']];
 function setStats(s){const list=(s.problems||[]).concat(s.items||[]);const ok=list.filter(p=>S.prac[p.id]&&S.prac[p.id].ok).length,res=list.filter(p=>itemResolved(p.id)).length;const q=S.quiz[s.id];return{n:list.length,ok,res,q,qn:(s.quiz||[]).length}}
 function viewLibrary(tab){tab=tab||ui.libTab||'python';ui.libTab=tab;const wrap=h('div',{class:'wrap'});
- add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Sab content app ke andar'}),h('h1',{text:'Practice'}),h('p',{text:'Auto-checked problems, drills, quizzes, interview banks, project briefs aur verified resources.'})))]);
+ add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'All content inside the app'}),h('h1',{text:'Practice'}),h('p',{text:'Auto-checked problems, drills, quizzes, interview banks, project briefs and verified resources.'})))]);
  add(wrap,[h('div',{class:'tabs',role:'tablist'},LIBTABS.map(([k,l])=>h('button',{role:'tab','aria-selected':String(k===tab),onclick:()=>{location.hash='#/practice/'+k}},l)))]);
  if(tab==='interview')add(wrap,[h('div',{class:'grid g3'},C.interview.map(b=>{const r=b.items.filter(i=>S.iv[i.id]).length;return h('a',{class:'card setcard',href:'#/interview/'+b.id},h('div',{class:'row between'},h('span',{class:'chip',style:{'--cc':'var(--c-career)'}},ic('mic','sm'),'Interview'),h('span',{class:'est',text:r+'/'+b.items.length+' rated'})),h('h3',{style:{margin:0},text:b.title}),h('div',{class:'bar'},h('i',{style:{width:(r/b.items.length*100)+'%'}})))}))]);
  else if(tab==='projects')add(wrap,[h('div',{class:'grid g2'},C.projects.map(p=>{const pp=S.kit.proj[p.id]||{};const dn=Object.values(pp.d||{}).filter(Boolean).length;return h('a',{class:'card setcard',href:'#/project/'+p.id},h('div',{class:'row between'},chip('projects'),pp.shipped?h('span',{class:'chip ok'},ic('check','sm'),'Shipped'):h('span',{class:'est',text:dn+'/'+p.deliverables.length+' deliverables'})),h('h3',{style:{margin:0},text:p.title}),h('p',{class:'small muted',style:{margin:0},text:p.goal}))}))]);
@@ -834,17 +849,17 @@ function viewLibrary(tab){tab=tab||ui.libTab||'python';ui.libTab=tab;const wrap=
   add(wrap,[h('div',{class:'grid g3'},sets.map(s=>{const x=setStats(s);const used=(IX.bySet[s.id]||[]).map(t=>IX.task[t.id].d.n);
    const pct=x.n?x.ok/x.n:(x.q?1:0);return h('a',{class:'card setcard',href:'#/set/'+s.id},h('div',{class:'row between'},chip(s.subject==='quiz'?'career':s.subject),h('span',{class:'est',text:x.n?x.ok+'/'+x.n+' solved':(x.q?'best '+x.q.best+'/'+x.q.total:x.qn+' questions')})),
     h('h3',{style:{margin:0},text:s.title}),h('div',{class:'small muted',text:[x.n?plural(x.n,s.items?'answer':'problem'):'',x.qn?plural(x.qn,'quiz question'):'',used.length?'Plan: Day '+[...new Set(used)].join(', '):'Extra practice'].filter(Boolean).join(' · ')}),h('div',{class:'bar'},h('i',{style:{width:(pct*100)+'%'}})))}))]);
-  if(!sets.length)add(wrap,[h('p',{class:'empty',text:'Kuch nahi mila.'})])}
+  if(!sets.length)add(wrap,[h('p',{class:'empty',text:'Nothing found.'})])}
  return wrap}
 function resourcesView(){const box=h('div',{});const q=h('input',{class:'input',type:'search',placeholder:'Search: Power Query, window function, LinkedIn…','aria-label':'Search resources',style:{maxWidth:'420px',marginBottom:'14px'}});const list=h('div',{});
  const draw=()=>{list.innerHTML='';const s=q.value.toLowerCase();const areas={};C.resources.filter(r=>!s||(r.t+' '+(r.ch||'')+' '+(r.note||'')+' '+r.area).toLowerCase().includes(s)).forEach(r=>(areas[r.area]=areas[r.area]||[]).push(r));
   for(const a in areas)add(list,[h('h3',{style:{margin:'16px 0 8px'},text:a}),h('div',{class:'reslist'},areas[a].map(r=>h('a',{class:'res',href:r.u,target:'_blank',rel:'noopener'},ic(isVideo(r.u)?'video':'ext'),h('div',{style:{flex:1,minWidth:0}},h('div',{text:r.t}),h('div',{class:'sub',text:[r.len,r.lang,r.ch,r.note].filter(Boolean).join(' · ')})),ic('ext','sm'))))]);
-  if(!list.childNodes.length)add(list,[h('p',{class:'empty',text:'Kuch nahi mila.'})])};
- q.addEventListener('input',draw);draw();add(box,[q,list,h('p',{class:'tiny muted',text:'Har length 25 Nov 2026 ko verify ki gayi (YouTube page data).'})]);return box}
+  if(!list.childNodes.length)add(list,[h('p',{class:'empty',text:'Nothing found.'})])};
+ q.addEventListener('input',draw);draw();add(box,[q,list,h('p',{class:'tiny muted',text:'Every length verified on 25 Nov 2026 (YouTube page data).'})]);return box}
 
 /* ---------- set workspace ---------- */
 function backLink(taskId){if(taskId&&IX.task[taskId]){const d=IX.task[taskId].d;const cur=currentDay();return h('a',{class:'btn ghost sm',href:cur&&cur.id===d.id?'#/today':'#/day/'+d.id},ic('left','sm'),'Day '+d.n)}return h('a',{class:'btn ghost sm',href:'#/practice/'+(ui.libTab||'python')},ic('left','sm'),'Practice')}
-function viewSet(id,taskId){const s=IX.set[id];if(!s)return h('p',{class:'empty',text:'Set nahi mila.'});const t=taskId&&IX.task[taskId]?IX.task[taskId].t:null;
+function viewSet(id,taskId){const s=IX.set[id];if(!s)return h('p',{class:'empty',text:'Set not found.'});const t=taskId&&IX.task[taskId]?IX.task[taskId].t:null;
  const wrap=h('div',{class:'wrap'});
  add(wrap,[h('div',{class:'row',style:{marginBottom:'8px'}},backLink(taskId)),h('div',{class:'pagehead'},h('div',{},h('div',{class:'row wrap'},chip(s.subject==='quiz'?'career':s.subject),t?h('span',{class:'chip plain',text:'Task: '+t.t.slice(0,60)}):null),h('h1',{style:{marginTop:'8px'},text:s.title}),s.intro?h('p',{text:s.intro}):null),
   /mock/.test(s.id)?mockTimer(s.id):null)]);
@@ -865,62 +880,62 @@ function codeWorkspace(s,task){const probs=(s.problems||[]).map((p,i)=>({p,i})).
  const drawRail=()=>{rail.innerHTML='';probs.forEach((x,k)=>{const ps=S.prac[x.p.id]||{};const dc=ps.ok?'ok':ps.peeked?'peek':ps.tries?'try':'';
    add(rail,[h('button',{'aria-current':String(cur===k),onclick:()=>{cur=k;ui[key]=k;drawRail();drawMain()}},h('span',{class:'dot '+dc}),'Problem '+(x.i+1),h('span',{class:'lvlchip',style:{marginLeft:'auto'},text:x.p.lvl||''}))])});
   if(hasQuiz){const q=S.quiz[s.id];add(rail,[h('button',{'aria-current':String(cur==='quiz'),onclick:()=>{cur='quiz';ui[key]='quiz';drawRail();drawMain()}},h('span',{class:'dot '+(q?'ok':'')}),'Quiz ('+s.quiz.length+')',q?h('span',{class:'lvlchip',style:{marginLeft:'auto'},text:q.best+'/'+q.total}):null)])}
-  const solved=probs.filter(x=>S.prac[x.p.id]&&S.prac[x.p.id].ok).length;add(rail,[h('div',{class:'tiny muted',style:{padding:'8px 10px'},text:solved+'/'+probs.length+' solved · green = solved, amber = solution dekha'})])};
+  const solved=probs.filter(x=>S.prac[x.p.id]&&S.prac[x.p.id].ok).length;add(rail,[h('div',{class:'tiny muted',style:{padding:'8px 10px'},text:solved+'/'+probs.length+' solved · green = solved, amber = solution viewed'})])};
  const drawMain=()=>{main.innerHTML='';if(cur==='quiz'){add(main,[quizView(s)]);return}const x=probs[cur];add(main,[problemView(s,x.p,x.i,()=>{drawRail();autoComplete(s.id)},()=>{if(cur<probs.length-1){cur++;ui[key]=cur;drawRail();drawMain();window.scrollTo({top:0,behavior:'smooth'})}else if(hasQuiz){cur='quiz';drawRail();drawMain()}},cur===probs.length-1&&!hasQuiz)])};
  drawRail();drawMain();return h('div',{class:'ws'},rail,main)}
 function sqlSetup(p){return p.setup||(p.db&&C.dbs[p.db]?C.dbs[p.db].setup:'')}
 function problemView(s,p,i,onChange,onNext,isLast){const isSql=p.kind==='sql';const ps=S.prac[p.id]||{};const card=h('div',{class:'card'});
  add(card,[h('div',{class:'row between wrap'},h('div',{class:'row'},h('h3',{style:{margin:0},text:'Problem '+(i+1)}),h('span',{class:'lvlchip',text:{E:'Easy',M:'Medium',H:'Hard',C:'Challenge'}[p.lvl]||p.lvl||''}),p.est?h('span',{class:'est',text:'~'+p.est+' min'}):null),
-  ps.ok?h('span',{class:'chip ok'},ic('check','sm'),'Solved'+(ps.peeked?' (after peek)':'')):ps.peeked?h('span',{class:'chip warn'},ic('eye','sm'),'Solution dekha'):null),
+  ps.ok?h('span',{class:'chip ok'},ic('check','sm'),'Solved'+(ps.peeked?' (after peek)':'')):ps.peeked?h('span',{class:'chip warn'},ic('eye','sm'),'Solution viewed'):null),
   h('p',{style:{whiteSpace:'pre-wrap',margin:'10px 0'},text:p.t})]);
  if(p.from)add(card,[h('p',{class:'tiny muted',text:p.from})]);
  if(isSql&&p.db&&C.dbs[p.db])add(card,[h('details',{class:'mini'},h('summary',{text:'Tables (shop database)'}),h('pre',{class:'code',text:C.dbs[p.db].schema}),h('p',{class:'tiny muted',text:C.dbs[p.db].note}))]);
  const fn=Object.keys(p.files||{});if(fn.length)add(card,[h('details',{class:'mini'},h('summary',{text:'Files available to your code: '+fn.join(', ')}),fn.map(f=>h('div',{},h('b',{class:'small',text:f}),h('pre',{class:'code',text:String(p.files[f]).slice(0,1200)+(String(p.files[f]).length>1200?'\n…':'')}))))]);
- if(p.terminal)add(card,[h('div',{class:'note amber small',text:'Ye problem VS Code terminal mein karo (pip chahiye, browser runner mein nahi). Criteria tick karke solved mark karo.'})]);
+ if(p.terminal)add(card,[h('div',{class:'note amber small',text:'Do this problem in the VS Code terminal (it needs pip, which the browser runner does not have). Tick the criteria to mark it solved.'})]);
  let stdin=null;if(!isSql&&p.stdin!=null){stdin=h('textarea',{class:'input',rows:'2','aria-label':'Input for input()',style:{fontFamily:'var(--mono)',fontSize:'.84rem'}});stdin.value=p.stdin}
  const ed=makeEditor(ps.code!=null?ps.code:(p.code||''),{sql:isSql,label:isSql?'SQL editor':'Python editor',onChange:v=>{S.prac[p.id]=Object.assign({tries:0},S.prac[p.id]||{},{code:v,t:now()});clearTimeout(ui.codeT);ui.codeT=setTimeout(save,800)},onRun:()=>run(false)});
- const out=h('div',{class:'out','aria-live':'polite'},h('p',{class:'muted small',style:{margin:0},text:(isSql?'Run':'Run')+' se output dikhega; Submit se check hoga. Shortcut: Ctrl+Enter = Run.'}));
+ const out=h('div',{class:'out','aria-live':'polite'},h('p',{class:'muted small',style:{margin:0},text:(isSql?'Run':'Run')+' shows the output; Submit checks it. Shortcut: Ctrl+Enter = Run.'}));
  const runB=h('button',{class:'btn',onclick:()=>run(false)},ic('play','sm'),'Run');const subB=h('button',{class:'btn primary',onclick:()=>run(true)},ic('check','sm'),'Submit');
  const busy=(b,m)=>{runB.disabled=subB.disabled=b;if(b){out.innerHTML='';add(out,[h('div',{class:'row muted small'},h('div',{class:'spin',style:{width:'18px',height:'18px',margin:0,borderWidth:'2px'}}),m||'Running…')])}};
- function showRes(r){if(isSql&&r.sql){if(r.sql.error){add(out,[h('pre',{class:'stderr',text:r.sql.error})]);return}if(r.sql.none){add(out,[h('p',{class:'muted',text:'Query chali, par koi table result nahi.'})]);return}add(out,[resultTable(r.sql.cols,r.sql.rows)]);return}
-  if(r.stdout)add(out,[h('pre',{text:r.stdout})]);if(r.stderr)add(out,[h('pre',{class:'stderr',text:r.stderr})]);if(!r.stdout&&!r.stderr)add(out,[h('p',{class:'muted',text:'(kuch print nahi hua)'})])}
- function run(submit){const code=ed.get();if(!code.trim()){toast('Pehle code likho');return}busy(true,Runner.state==='ready'?'Running…':'Python runner load ho raha hai (pehli baar ~10-20 s)…');
+ function showRes(r){if(isSql&&r.sql){if(r.sql.error){add(out,[h('pre',{class:'stderr',text:r.sql.error})]);return}if(r.sql.none){add(out,[h('p',{class:'muted',text:'The query ran but returned no table.'})]);return}add(out,[resultTable(r.sql.cols,r.sql.rows)]);return}
+  if(r.stdout)add(out,[h('pre',{text:r.stdout})]);if(r.stderr)add(out,[h('pre',{class:'stderr',text:r.stderr})]);if(!r.stdout&&!r.stderr)add(out,[h('p',{class:'muted',text:'(nothing was printed)'})])}
+ function run(submit){const code=ed.get();if(!code.trim()){toast('Write some code first');return}busy(true,Runner.state==='ready'?'Running…':'Loading the Python runner (first time ~10-20 s)…');
   const pr=isSql?Runner.runSql(sqlSetup(p),code,p.check):Runner.runPy(p,{code,stdin:submit?p.stdin:(stdin?stdin.value:p.stdin),args:p.args,files:p.files,onStatus:t=>{out.innerHTML='';add(out,[h('p',{class:'muted small',text:t})])}});
   pr.then(r=>{busy(false);out.innerHTML='';if(!submit||!p.auto){showRes(r);return}
-   let g;if(isSql)g=Grade.sql(p,r.sql);else if(r.timeout||(r.stderr&&!r.stdout))g={ok:false,msg:r.timeout?'Timed out.':'Code mein error aaya: red message padho.'};else g=Grade.py(p,r.stdout);
+   let g;if(isSql)g=Grade.sql(p,r.sql);else if(r.timeout||(r.stderr&&!r.stdout))g={ok:false,msg:r.timeout?'Timed out.':'Your code raised an error: read the red message.'};else g=Grade.py(p,r.stdout);
    const prev=S.prac[p.id]||{};setPrac(p.id,{tries:(prev.tries||0)+1,ok:prev.ok||g.ok,code});save();checkLevelUp();
-   add(out,[h('div',{class:'verdict '+(g.ok?'ok':'bad')},ic(g.ok?'check':'x'),g.ok?'Correct!'+(g.note?' '+g.note:''):(g.msg||'Output expected se match nahi karta.'))]);showRes(r);
+   add(out,[h('div',{class:'verdict '+(g.ok?'ok':'bad')},ic(g.ok?'check':'x'),g.ok?'Correct!'+(g.note?' '+g.note:''):(g.msg||'The output does not match the expected output.'))]);showRes(r);
    if(!isSql&&!g.ok&&r.stdout!=null&&!r.timeout)add(out,[diffBlock(p.ex,r.stdout)]);
-   if(g.ok)add(out,[h('div',{class:'row',style:{marginTop:'10px'}},isLast?h('span',{class:'muted small',text:'Set ka last problem.'}):h('button',{class:'btn primary',onclick:onNext},'Next problem',ic('right','sm')))]);
+   if(g.ok)add(out,[h('div',{class:'row',style:{marginTop:'10px'}},isLast?h('span',{class:'muted small',text:'Last problem in this set.'}):h('button',{class:'btn primary',onclick:onNext},'Next problem',ic('right','sm')))]);
    onChange()})}
- add(card,[stdin?h('div',{class:'field',style:{marginBottom:'10px'}},h('label',{text:'Input (input() ke liye, har line ek input)'}),stdin):null,ed.el]);
- const resetB=h('button',{class:'btn ghost sm',onclick:()=>confirmBox('Starter code par reset?','Tumhara code hat jayega.','Reset',()=>ed.set(p.code||''),true)},'Reset');
+ add(card,[stdin?h('div',{class:'field',style:{marginBottom:'10px'}},h('label',{text:'Input (for input(), one line per input)'}),stdin):null,ed.el]);
+ const resetB=h('button',{class:'btn ghost sm',onclick:()=>confirmBox('Reset to the starter code?','Your code will be removed.','Reset',()=>ed.set(p.code||''),true)},'Reset');
  const hintBox=h('div',{});const solBox=h('div',{});
  const hintB=p.hint?h('button',{class:'btn ghost sm',onclick:()=>{hintBox.innerHTML='';add(hintBox,[h('div',{class:'note amber small'},ic('bulb','sm'),' ',p.hint)])}},ic('bulb','sm'),'Hint'):null;
- const solB=h('button',{class:'btn ghost sm',onclick:()=>{const show=()=>{solBox.innerHTML='';add(solBox,[h('pre',{class:'code',text:p.sol}),h('p',{class:'tiny muted',text:'Ab solution band karke khud se dobara likho, phir Submit.'})])};
-  if((S.prac[p.id]||{}).peeked||(S.prac[p.id]||{}).ok){show();return}confirmBox('Solution dekhna hai?','Ye problem "solution dekha" (amber) mark hogi. Pehle hint try karo.','Show solution',()=>{setPrac(p.id,{peeked:true});save();show();onChange()})}},ic('eye','sm'),'Solution');
+ const solB=h('button',{class:'btn ghost sm',onclick:()=>{const show=()=>{solBox.innerHTML='';add(solBox,[h('pre',{class:'code',text:p.sol}),h('p',{class:'tiny muted',text:'Now close the solution, write it again yourself, then Submit.'})])};
+  if((S.prac[p.id]||{}).peeked||(S.prac[p.id]||{}).ok){show();return}confirmBox('View the solution?','This problem will be marked "solution viewed" (amber). Try the hint first.','Show solution',()=>{setPrac(p.id,{peeked:true});save();show();onChange()})}},ic('eye','sm'),'Solution');
  if(p.auto)add(card,[h('div',{class:'row wrap',style:{margin:'12px 0'}},runB,subB,hintB,solB,resetB)]);
  else{const crit=p.crit||[];const box=h('div',{class:'stack',style:{margin:'12px 0'}});const state=(S.prac[p.id]||{}).crit||{};
-  add(box,[h('b',{class:'small',text:'Self-check criteria (sab tick ho to solved):'}),crit.map((c,k)=>{const cb=h('button',{class:'check'+(state[k]?' on':''),'aria-pressed':String(!!state[k]),'aria-label':c,onclick:()=>{const cs=Object.assign({},(S.prac[p.id]||{}).crit||{});cs[k]=!cs[k];const all=crit.every((_,j)=>cs[j]);setPrac(p.id,{crit:cs,ok:all,tries:1});save();onChange();rerender()}},ic('check','sm'));return h('div',{class:'checkrow'},cb,h('span',{text:c}))}),
+  add(box,[h('b',{class:'small',text:'Self-check criteria (solved when all are ticked):'}),crit.map((c,k)=>{const cb=h('button',{class:'check'+(state[k]?' on':''),'aria-pressed':String(!!state[k]),'aria-label':c,onclick:()=>{const cs=Object.assign({},(S.prac[p.id]||{}).crit||{});cs[k]=!cs[k];const all=crit.every((_,j)=>cs[j]);setPrac(p.id,{crit:cs,ok:all,tries:1});save();onChange();rerender()}},ic('check','sm'));return h('div',{class:'checkrow'},cb,h('span',{text:c}))}),
    h('div',{class:'row wrap'},p.terminal?null:runB,hintB,solB)]);add(card,[box])}
  add(card,[hintBox,solBox,out]);
  if(p.auto&&p.ex!=null)add(card,[h('details',{class:'mini',style:{marginTop:'10px'}},h('summary',{text:'Expected output'}),isSql?resultTable(p.ex.cols,p.ex.rows):h('pre',{class:'code',text:p.ex}))]);
  return card}
-function resultTable(cols,rows){return h('div',{class:'tblwrap'},h('table',{class:'tbl'},h('thead',{},h('tr',{},cols.map(c=>h('th',{text:c})))),h('tbody',{},rows.slice(0,200).map(r=>h('tr',{},r.map(v=>h('td',{text:v===null?'NULL':String(v)})))))),rows.length>200?h('p',{class:'tiny muted',style:{padding:'6px 10px'},text:rows.length+' rows (pehli 200 dikh rahi)'}):h('p',{class:'tiny muted',style:{padding:'6px 10px',margin:0},text:plural(rows.length,'row')}))}
+function resultTable(cols,rows){return h('div',{class:'tblwrap'},h('table',{class:'tbl'},h('thead',{},h('tr',{},cols.map(c=>h('th',{text:c})))),h('tbody',{},rows.slice(0,200).map(r=>h('tr',{},r.map(v=>h('td',{text:v===null?'NULL':String(v)})))))),rows.length>200?h('p',{class:'tiny muted',style:{padding:'6px 10px'},text:rows.length+' rows (showing the first 200)'}):h('p',{class:'tiny muted',style:{padding:'6px 10px',margin:0},text:plural(rows.length,'row')}))}
 function diffBlock(exp,got){const a=Grade.norm(exp).split('\n'),b=Grade.norm(got).split('\n');const n=Math.max(a.length,b.length);const rows=[];for(let i=0;i<n;i++){const ok=a[i]===b[i];rows.push(h('tr',{style:{background:ok?'':'var(--danger-soft)'}},h('td',{text:String(i+1)}),h('td',{text:a[i]==null?'(none)':a[i]}),h('td',{text:b[i]==null?'(none)':b[i]})))}
- return h('details',{class:'mini',open:true,style:{marginTop:'8px'}},h('summary',{text:'Line by line: expected vs tumhara output'}),h('div',{class:'tblwrap'},h('table',{class:'tbl',style:{fontFamily:'var(--mono)'}},h('thead',{},h('tr',{},h('th',{text:'#'}),h('th',{text:'Expected'}),h('th',{text:'Got'}))),h('tbody',{},rows))))}
+ return h('details',{class:'mini',open:true,style:{marginTop:'8px'}},h('summary',{text:'Line by line: expected vs your output'}),h('div',{class:'tblwrap'},h('table',{class:'tbl',style:{fontFamily:'var(--mono)'}},h('thead',{},h('tr',{},h('th',{text:'#'}),h('th',{text:'Expected'}),h('th',{text:'Got'}))),h('tbody',{},rows))))}
 
 /* ---------- drills (Excel / Power BI answers) ---------- */
 function drillView(s){const box=h('div',{class:'stack'});const head=h('div',{});
- const drawHead=()=>{const x=setStats(s);head.innerHTML='';add(head,[h('div',{class:'card',style:{padding:'12px 16px'}},h('div',{class:'row between'},h('b',{text:x.ok+'/'+x.n+' correct'}),h('span',{class:'small muted',text:'Excel/Power BI mein formula se answer nikalo, yahan check karo.'})),h('div',{class:'bar',style:{marginTop:'8px'}},h('i',{style:{width:(x.ok/x.n*100)+'%'}})))])};
+ const drawHead=()=>{const x=setStats(s);head.innerHTML='';add(head,[h('div',{class:'card',style:{padding:'12px 16px'}},h('div',{class:'row between'},h('b',{text:x.ok+'/'+x.n+' correct'}),h('span',{class:'small muted',text:'Get the answer with a formula in Excel/Power BI, then check it here.'})),h('div',{class:'bar',style:{marginTop:'8px'}},h('i',{style:{width:(x.ok/x.n*100)+'%'}})))])};
  drawHead();add(box,[head]);
  s.items.forEach((it,k)=>{const ps=S.prac[it.id]||{};const inp=h('input',{class:'input',inputmode:it.type==='num'?'decimal':'text',placeholder:it.type==='num'?'Number':'Answer','aria-label':'Answer '+(k+1),value:ps.ans||'',style:{maxWidth:'260px'}});
   const msg=h('div',{class:'small'});const fbox=h('div',{});
-  const show=()=>{msg.innerHTML='';const p2=S.prac[it.id]||{};if(p2.ok)add(msg,[h('span',{class:'chip ok'},ic('check','sm'),'Correct'+(p2.peeked?' (formula dekhne ke baad)':''))]);else if(p2.tries)add(msg,[h('span',{class:'chip bad'},ic('x','sm'),'Abhi galat ('+p2.tries+' try)')])};
-  const check=()=>{const g=Grade.drill(it,inp.value);if(!g){toast('Answer likho');return}if(g.msg){toast(g.msg);return}const p2=S.prac[it.id]||{};setPrac(it.id,{ans:inp.value,tries:(p2.tries||0)+1,ok:p2.ok||g.ok});save();checkLevelUp();show();drawHead();autoComplete(s.id)};
+  const show=()=>{msg.innerHTML='';const p2=S.prac[it.id]||{};if(p2.ok)add(msg,[h('span',{class:'chip ok'},ic('check','sm'),'Correct'+(p2.peeked?' (after viewing the formula)':''))]);else if(p2.tries)add(msg,[h('span',{class:'chip bad'},ic('x','sm'),'Not correct yet ('+p2.tries+(p2.tries===1?' try)':' tries)'))])};
+  const check=()=>{const g=Grade.drill(it,inp.value);if(!g){toast('Enter your answer');return}if(g.msg){toast(g.msg);return}const p2=S.prac[it.id]||{};setPrac(it.id,{ans:inp.value,tries:(p2.tries||0)+1,ok:p2.ok||g.ok});save();checkLevelUp();show();drawHead();autoComplete(s.id)};
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')check()});
   const fb=h('button',{class:'btn ghost sm',onclick:()=>{const sh=()=>{fbox.innerHTML='';add(fbox,[h('pre',{class:'code',text:it.formula+(it.type==='num'?'\nAnswer: '+it.ans:'\nAnswer: '+it.ans)})])};if((S.prac[it.id]||{}).peeked||(S.prac[it.id]||{}).ok){sh();return}
-   confirmBox('Formula + answer dekhna hai?','Ye item "dekha" mark hoga (amber). Pehle hint try karo.','Show',()=>{setPrac(it.id,{peeked:true});save();sh();show();autoComplete(s.id)})}},ic('eye','sm'),'Formula');
+   confirmBox('View the formula + answer?','This item will be marked "viewed" (amber). Try the hint first.','Show',()=>{setPrac(it.id,{peeked:true});save();sh();show();autoComplete(s.id)})}},ic('eye','sm'),'Formula');
   show();add(box,[h('div',{class:'card drill'},h('div',{class:'n',text:String(k+1)}),h('div',{},h('p',{style:{fontWeight:600},text:it.t}),h('div',{class:'row wrap'},inp,h('button',{class:'btn primary',onclick:check},'Check'),it.hint?h('button',{class:'btn ghost sm',onclick:e=>{e.target.closest('button').replaceWith(h('span',{class:'chip warn'},ic('bulb','sm'),'Hint: '+it.hint))}},ic('bulb','sm'),'Hint'):null,fb),msg,fbox))])});
  return box}
 
@@ -929,21 +944,21 @@ function hashStr(s){let x=2166136261;for(const c of s){x^=c.charCodeAt(0);x=Math
 function shuffled(n,seed){const a=[...Array(n).keys()];let x=seed||1;for(let i=n-1;i>0;i--){x=(Math.imul(x,1103515245)+12345)>>>0;const j=x%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 function quizView(s){const qs=s.quiz;const st={i:0,score:0,ans:[]};const box=h('div',{class:'card'});const prev=S.quiz[s.id];
  const start=()=>{st.i=0;st.score=0;st.ans=[];draw()};
- const intro=()=>{box.innerHTML='';add(box,[h('h3',{text:'Quiz · '+qs.length+' questions'}),h('p',{class:'muted',text:prev?`Pichli baar ${prev.last}/${prev.total}, best ${prev.best}/${prev.total} (${prev.att} attempts).`:'Har answer ke baad explanation milega.'}),h('button',{class:'btn primary',onclick:start},ic('play','sm'),prev?'Retake quiz':'Start quiz')])};
+ const intro=()=>{box.innerHTML='';add(box,[h('h3',{text:'Quiz · '+qs.length+' questions'}),h('p',{class:'muted',text:prev?`Last time ${prev.last}/${prev.total}, best ${prev.best}/${prev.total} (${prev.att} attempts).`:'You get an explanation after each answer.'}),h('button',{class:'btn primary',onclick:start},ic('play','sm'),prev?'Retake quiz':'Start quiz')])};
  const draw=()=>{box.innerHTML='';if(st.i>=qs.length){finish();return}const q=qs[st.i];const order=shuffled(q.opts.length,hashStr(q.id||q.q));let picked=null;
   const opts=h('div',{});const why=h('div',{});const nextB=h('button',{class:'btn primary',hidden:true,onclick:()=>{st.i++;draw()}},st.i===qs.length-1?'Finish':'Next',ic('right','sm'));
   order.forEach((oi,k)=>{const b=h('button',{class:'opt',onclick:()=>{if(picked!=null)return;picked=oi;const ok=oi===q.a;if(ok)st.score++;st.ans.push(ok);
     opts.querySelectorAll('.opt').forEach(x=>{const o=+x.dataset.o;if(o===q.a)x.classList.add('right');else if(o===oi)x.classList.add('wrong');x.disabled=true});
-    add(why,[h('div',{class:'note '+(ok?'green':'amber'),style:{marginTop:'6px'}},h('b',{text:ok?'Sahi! ':'Galat. '}),q.why||'')]);nextB.hidden=false;nextB.focus()},'data-o':String(oi)},h('span',{class:'k',text:'ABCD'[k]}),h('code',{text:q.opts[oi]}));add(opts,[b])});
+    add(why,[h('div',{class:'note '+(ok?'green':'amber'),style:{marginTop:'6px'}},h('b',{text:ok?'Correct! ':'Wrong. '}),q.why||'')]);nextB.hidden=false;nextB.focus()},'data-o':String(oi)},h('span',{class:'k',text:'ABCD'[k]}),h('code',{text:q.opts[oi]}));add(opts,[b])});
   add(box,[h('div',{class:'row between'},h('span',{class:'eyebrow',text:'Question '+(st.i+1)+' / '+qs.length}),h('span',{class:'est',text:st.score+' correct'})),h('div',{class:'bar',style:{margin:'8px 0 14px'}},h('i',{style:{width:(st.i/qs.length*100)+'%'}})),
    h('p',{style:{fontWeight:650,fontSize:'1.02rem'},text:q.q}),(q.show||q.code)?h('pre',{class:'code',text:q.show||q.code}):null,opts,why,h('div',{class:'row',style:{marginTop:'12px',justifyContent:'flex-end'}},nextB)])};
  const finish=()=>{const p=S.quiz[s.id]||{best:0,att:0};S.quiz[s.id]={best:Math.max(p.best||0,st.score),last:st.score,total:qs.length,att:(p.att||0)+1,t:now()};save();checkLevelUp();autoComplete(s.id);
-  const pct=st.score/qs.length;add(box,[h('div',{class:'donecard'},h('div',{class:'big'},ic(pct>=.8?'trophy':'target','lg')),h('h2',{text:st.score+' / '+qs.length}),h('p',{class:'muted',text:pct>=.8?'Bahut badhiya.':pct>=.5?'Theek hai; galat wale explanations dobara padho.':'Is topic ko revise karo, phir retake.'}),h('button',{class:'btn',onclick:start},ic('refresh','sm'),'Retake'))])};
+  const pct=st.score/qs.length;add(box,[h('div',{class:'donecard'},h('div',{class:'big'},ic(pct>=.8?'trophy':'target','lg')),h('h2',{text:st.score+' / '+qs.length}),h('p',{class:'muted',text:pct>=.8?'Excellent.':pct>=.5?'Good; review the explanations for the ones you missed.':'Revise this topic, then retake.'}),h('button',{class:'btn',onclick:start},ic('refresh','sm'),'Retake'))])};
  intro();return box}
 
 /* ---------- interview bank ---------- */
-function viewInterview(id){const b=C.interview.find(x=>x.id===id);if(!b)return h('p',{class:'empty',text:'Bank nahi mila.'});const wrap=h('div',{class:'wrap'});
- add(wrap,[h('div',{class:'row',style:{marginBottom:'8px'}},h('a',{class:'btn ghost sm',href:'#/practice/interview'},ic('left','sm'),'Interview banks')),h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Interview practice'}),h('h1',{text:b.title}),h('p',{text:'Pehle bolkar answer do (English), phir points reveal karke compare karo aur khud ko rate karo.'})))]);
+function viewInterview(id){const b=C.interview.find(x=>x.id===id);if(!b)return h('p',{class:'empty',text:'Bank not found.'});const wrap=h('div',{class:'wrap'});
+ add(wrap,[h('div',{class:'row',style:{marginBottom:'8px'}},h('a',{class:'btn ghost sm',href:'#/practice/interview'},ic('left','sm'),'Interview banks')),h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Interview practice'}),h('h1',{text:b.title}),h('p',{text:'Answer out loud first (English), then reveal the points, compare and rate yourself.'})))]);
  b.items.forEach((it,k)=>{const r=(S.iv[it.id]||{}).r;const pts=h('div',{hidden:true},h('ul',{style:{margin:'8px 0 0',paddingLeft:'20px'}},it.points.map(p=>h('li',{text:p}))));
   const rate=v=>{S.iv[it.id]={r:v,t:now()};save();rerender()};
   add(wrap,[h('div',{class:'card'},h('div',{class:'row between top'},h('h3',{style:{margin:0},text:(k+1)+'. '+it.q}),r?h('span',{class:'chip '+(r==='s'?'ok':r==='o'?'warn':'bad'),text:{s:'Strong',o:'OK',w:'Weak'}[r]}):null),
@@ -951,7 +966,7 @@ function viewInterview(id){const b=C.interview.find(x=>x.id===id);if(!b)return h
     [['s','Strong'],['o','OK'],['w','Weak']].map(([v,l])=>h('button',{class:'btn sm'+(r===v?' primary':''),onclick:()=>rate(v)},l))),pts)])});return wrap}
 
 /* ---------- project brief ---------- */
-function viewProject(id){const p=IX.project[id];if(!p)return h('p',{class:'empty',text:'Project nahi mila.'});const pp=S.kit.proj[id]||{d:{}};const wrap=h('div',{class:'wrap'});
+function viewProject(id){const p=IX.project[id];if(!p)return h('p',{class:'empty',text:'Project not found.'});const pp=S.kit.proj[id]||{d:{}};const wrap=h('div',{class:'wrap'});
  const setP=patch=>{S.kit.proj[id]=Object.assign({d:{}},S.kit.proj[id]||{},patch,{t:now()});save();rerender()};
  add(wrap,[h('div',{class:'row',style:{marginBottom:'8px'}},h('a',{class:'btn ghost sm',href:'#/practice/projects'},ic('left','sm'),'Projects')),h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Project brief'}),h('h1',{text:p.title}),h('p',{text:p.goal})),pp.shipped?h('span',{class:'chip ok'},ic('check','sm'),'Shipped'):null)]);
  const g=h('div',{class:'grid g2'});
@@ -962,8 +977,8 @@ function viewProject(id){const p=IX.project[id];if(!p)return h('p',{class:'empty
  add(wrap,[dl]);
  for(const k of Object.keys(p))if(!['id','title','goal','data_options','questions','deliverables'].includes(k)){const v=p[k];add(wrap,[h('div',{class:'card'},h('h3',{text:k.replace(/_/g,' ')}),Array.isArray(v)?h('ul',{style:{paddingLeft:'20px',margin:0}},v.map(x=>h('li',{text:typeof x==='string'?x:JSON.stringify(x)}))):h('div',{class:'tpl',text:typeof v==='string'?v:JSON.stringify(v,null,2)}),typeof v==='string'&&v.length>80?h('button',{class:'btn sm',onclick:()=>copyText(v)},ic('copy','sm'),'Copy'):null)])}
  const url=h('input',{class:'input',type:'url',placeholder:'GitHub repo / dashboard link',value:pp.url||''});
- add(wrap,[h('div',{class:'card'},h('h3',{text:'Ship it'}),h('p',{class:'small muted',text:'Project complete ho jaye (README + link) to yahan link daalo aur Shipped mark karo (+150 XP).'}),h('div',{class:'row wrap'},url,h('button',{class:'btn primary',onclick:()=>{const v=url.value.trim();if(!/^https?:\/\/\S+\.\S+/.test(v)){toast('Valid link chahiye');return}setP({url:v,shipped:true});toast('Project shipped!')}},ic('check','sm'),'Mark shipped'),pp.shipped?h('button',{class:'btn ghost',onclick:()=>setP({shipped:false})},'Undo'):null))]);
- const tasks=Object.values(IX.task).filter(x=>x.t.ref_project===id);if(tasks.length)add(wrap,[h('div',{class:'card'},h('h3',{text:'Plan mein is project ke tasks'}),tasks.map(x=>h('div',{class:'checkrow'},h('span',{class:'check'+(tDone(x.t)?' on':''),'aria-hidden':'true'},ic('check','sm')),h('a',{href:'#/day/'+x.d.id,text:'Day '+x.d.n+': '+x.t.t}))))]);
+ add(wrap,[h('div',{class:'card'},h('h3',{text:'Ship it'}),h('p',{class:'small muted',text:'When the project is complete (README + link), add the link here and mark it Shipped (+150 XP).'}),h('div',{class:'row wrap'},url,h('button',{class:'btn primary',onclick:()=>{const v=url.value.trim();if(!/^https?:\/\/\S+\.\S+/.test(v)){toast('Enter a valid link');return}setP({url:v,shipped:true});toast('Project shipped!')}},ic('check','sm'),'Mark shipped'),pp.shipped?h('button',{class:'btn ghost',onclick:()=>setP({shipped:false})},'Undo'):null))]);
+ const tasks=Object.values(IX.task).filter(x=>x.t.ref_project===id);if(tasks.length)add(wrap,[h('div',{class:'card'},h('h3',{text:'Tasks for this project in the plan'}),tasks.map(x=>h('div',{class:'checkrow'},h('span',{class:'check'+(tDone(x.t)?' on':''),'aria-hidden':'true'},ic('check','sm')),h('a',{href:'#/day/'+x.d.id,text:'Day '+x.d.n+': '+x.t.t}))))]);
  return wrap}
 
 /* ---------- progress ---------- */
@@ -971,13 +986,13 @@ function viewProgress(){const wrap=h('div',{class:'wrap'});const st=streakInfo()
  const mins=Object.values(act).reduce((a,r)=>a+r.min,0);const pr=Object.values(S.prac);const solved=pr.filter(p=>p.ok).length,tried=pr.filter(p=>p.tries||p.ok||p.peeked).length;const firstTry=pr.filter(p=>p.ok&&!p.peeked&&(p.tries||1)<=1).length;
  const kpi=(v,l,s)=>h('div',{class:'card kpi'},h('b',{text:v}),h('span',{text:l}),s?h('div',{class:'tiny muted',style:{marginTop:'4px'},text:s}):null);
  add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Honest numbers'}),h('h1',{text:'Progress'}),h('p',{text:'Projected finish '+fmtDY(projectedFinish())+' (plan: '+fmtDY(C.meta.end)+')'})))]);
- add(wrap,[h('div',{class:'grid g4'},kpi(done+' / '+IX.study.length,'days complete',Math.round(done/IX.study.length*100)+'% of plan'),kpi(fmtMin(mins),'study time logged','done tasks ke planned minutes'),
-  kpi(String(solved),'practice items solved',tried?Math.round(firstTry/Math.max(1,solved)*100)+'% first try, no peek':'abhi shuru nahi'),(()=>{const k=kpi(st.cur+' / '+st.best,'streak / best',st.freezes?st.freezes+' freeze ready':'7 counted days = 1 freeze');k.querySelector('b').prepend(flame(26,!st.todayCounts),' ');return k})())]);
+ add(wrap,[h('div',{class:'grid g4'},kpi(done+' / '+IX.study.length,'days complete',Math.round(done/IX.study.length*100)+'% of plan'),kpi(fmtMin(mins),'study time logged','planned minutes of done tasks'),
+  kpi(String(solved),'practice items solved',tried?Math.round(firstTry/Math.max(1,solved)*100)+'% first try, no peek':'not started'),(()=>{const k=kpi(st.cur+' / '+st.best,'streak / best',st.freezes?st.freezes+' freeze ready':'7 counted days = 1 freeze');k.querySelector('b').prepend(flame(26,!st.todayCounts),' ');return k})())]);
  // skills
- const comps=['excel','sql','powerbi','python','stats','projects','linkedin','github','career'];const sk=h('div',{class:'card'},h('h3',{text:'Skill progress'}),h('p',{class:'tiny muted',text:'Bar = us subject ke planned minutes mein se kitne complete. Accuracy = solved / attempted items.'}));
+ const comps=['excel','sql','powerbi','python','stats','projects','linkedin','github','career'];const sk=h('div',{class:'card'},h('h3',{text:'Skill progress'}),h('p',{class:'tiny muted',text:'Bar = share of the subject\'s planned minutes completed. Accuracy = solved / attempted items.'}));
  comps.forEach(c=>{let tot=0,dn=0;IX.study.forEach(d=>d.tasks.forEach(t=>{if(t.comp===c&&t.must){tot+=t.min;if(tDone(t))dn+=t.min}}));if(!tot)return;
   const items=C.sets.filter(s=>s.subject===c).flatMap(s=>(s.problems||[]).concat(s.items||[]));const at=items.filter(p=>S.prac[p.id]&&(S.prac[p.id].tries||S.prac[p.id].ok)),ok=at.filter(p=>S.prac[p.id].ok);
-  add(sk,[h('div',{class:'skill'},chip(c),h('div',{},h('div',{class:'bar'},h('i',{style:{width:(dn/tot*100)+'%',background:`var(${SUBJ[c][2]})`}})),items.length?h('div',{class:'tiny muted',style:{marginTop:'3px'},text:at.length?`accuracy ${Math.round(ok.length/at.length*100)}% (${ok.length}/${at.length})`:'practice abhi baaki'}):null),h('span',{class:'v',text:Math.round(dn/tot*100)+'%'}))])});
+  add(sk,[h('div',{class:'skill'},chip(c),h('div',{},h('div',{class:'bar'},h('i',{style:{width:(dn/tot*100)+'%',background:`var(${SUBJ[c][2]})`}})),items.length?h('div',{class:'tiny muted',style:{marginTop:'3px'},text:at.length?`accuracy ${Math.round(ok.length/at.length*100)}% (${ok.length}/${at.length})`:'practice pending'}):null),h('span',{class:'v',text:Math.round(dn/tot*100)+'%'}))])});
  // heatmap
  const hm=h('div',{class:'heat','aria-label':'Activity heatmap'});let d0=C.meta.start;while(parseISO(d0).getDay()!==1)d0=addDays(d0,-1);const end=addDays(C.meta.end,7);const t=todayISO();
  for(let d=d0;d<=end;d=addDays(d,1)){const r=act[d];const m=r?r.min:0;const lv=m>=240?4:m>=150?3:m>=90?2:m>0?1:0;add(hm,[h('i',{class:d>t?'fut':lv?'l'+lv:'',title:fmtD(d)+': '+(m?fmtMin(m):'no study')})])}
@@ -1002,7 +1017,7 @@ const KITTABS=[['linkedin','LinkedIn'],['resume','Resume'],['templates','Templat
 function checklist(prefix,items){const box=h('div',{});items.forEach((x,k)=>{const id=prefix+k;const on=!!(S.kit.checks[id]&&S.kit.checks[id].v);
   add(box,[h('div',{class:'checkrow'},h('button',{class:'check'+(on?' on':''),'aria-pressed':String(on),'aria-label':x,onclick:()=>{S.kit.checks[id]={v:!on,t:now()};save();rerender()}},ic('check','sm')),h('span',{text:x}))])});return box}
 function viewKit(tab){tab=tab||ui.kitTab||'linkedin';ui.kitTab=tab;const k=C.kit;const wrap=h('div',{class:'wrap'});
- add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Personal branding + job search'}),h('h1',{text:'Career kit'}),h('p',{text:'LinkedIn, resume, templates, application tracker aur proof wall ek jagah.'})))]);
+ add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Personal branding + job search'}),h('h1',{text:'Career kit'}),h('p',{text:'LinkedIn, resume, templates, application tracker and proof wall in one place.'})))]);
  add(wrap,[h('div',{class:'tabs',role:'tablist'},KITTABS.map(([a,l])=>h('button',{role:'tab','aria-selected':String(a===tab),onclick:()=>{location.hash='#/kit/'+a}},l)))]);
  const cnt=(p,n)=>Array.from({length:n},(_,i)=>S.kit.checks[p+i]&&S.kit.checks[p+i].v).filter(Boolean).length;
  if(tab==='linkedin'){const dr=k.linkedin_drafts||{};
@@ -1017,13 +1032,13 @@ function viewKit(tab){tab=tab||ui.kitTab||'linkedin';ui.kitTab=tab;const k=C.kit
  else if(tab==='tracker')add(wrap,[trackerView()]);
  else{const items=[];for(const id in S.tasks){const o=S.tasks[id],x=IX.task[id];if(o.proof&&x)items.push({o,x})}for(const id in S.kit.proj){const p=S.kit.proj[id];if(p.url&&IX.project[id])items.push({proj:IX.project[id],url:p.url})}
   add(wrap,[items.length?h('div',{class:'reslist'},items.map(it=>it.proj?h('a',{class:'res',href:it.url,target:'_blank',rel:'noopener'},chip('projects'),h('div',{style:{flex:1,minWidth:0}},h('div',{text:it.proj.title}),h('div',{class:'sub',text:it.url})),ic('ext','sm')):
-   h('a',{class:'res',href:it.o.proof,target:'_blank',rel:'noopener'},chip(it.x.t.comp),h('div',{style:{flex:1,minWidth:0}},h('div',{text:it.x.t.t}),h('div',{class:'sub',text:'Day '+it.x.d.n+' · '+it.o.proof})),ic('ext','sm')))):h('div',{class:'card empty'},'Abhi koi proof link nahi. GitHub/LinkedIn tasks mein link daaloge to yahan dikhega.')])}
+   h('a',{class:'res',href:it.o.proof,target:'_blank',rel:'noopener'},chip(it.x.t.comp),h('div',{style:{flex:1,minWidth:0}},h('div',{text:it.x.t.t}),h('div',{class:'sub',text:'Day '+it.x.d.n+' · '+it.o.proof})),ic('ext','sm')))):h('div',{class:'card empty'},'No proof links yet. Links you add to GitHub/LinkedIn tasks show up here.')])}
  return wrap}
 const APPST=['applied','screen','interview','offer','rejected'];
 function trackerView(){const box=h('div',{});const apps=Object.entries(S.kit.apps).filter(([,a])=>!a.del).sort((a,b)=>(b[1].applied||'').localeCompare(a[1].applied||''));
  const counts=APPST.map(s=>[s,apps.filter(([,a])=>a.status===s).length]);
  add(box,[h('div',{class:'row between wrap',style:{marginBottom:'14px'}},h('div',{class:'row wrap'},h('span',{class:'pill',text:apps.length+' total'}),counts.map(([s,n])=>h('span',{class:'pill',text:s+': '+n}))),h('button',{class:'btn primary',onclick:()=>appForm()},ic('plus','sm'),'Add application'))]);
- if(!apps.length){add(box,[h('div',{class:'card empty'},h('p',{text:'Plan mein applications Wed 3 Feb 2027 (Day 58) se start hain. Tracker kabhi bhi use kar sakte ho.'}))]);return box}
+ if(!apps.length){add(box,[h('div',{class:'card empty'},h('p',{text:'Applications start on Wed 3 Feb 2027 (Day 58) in the plan. You can use the tracker any time.'}))]);return box}
  add(box,[h('div',{class:'tblwrap',style:{maxHeight:'none'}},h('table',{class:'tbl'},h('thead',{},h('tr',{},['Company','Role','Source','Applied','Status','Next step',''].map(x=>h('th',{text:x})))),
   h('tbody',{},apps.map(([id,a])=>h('tr',{},h('td',{},a.link?h('a',{href:a.link,target:'_blank',rel:'noopener',text:a.company||'(no name)'}):a.company||''),h('td',{text:a.role||''}),h('td',{text:a.source||''}),h('td',{text:a.applied?fmtD(a.applied):''}),
    h('td',{},h('span',{class:'chip '+(a.status==='offer'?'ok':a.status==='rejected'?'bad':a.status==='interview'||a.status==='screen'?'warn':'plain'),text:a.status||''})),h('td',{text:a.next?fmtD(a.next):''}),
@@ -1032,26 +1047,26 @@ function appForm(id){const a=id?Object.assign({},S.kit.apps[id]):{status:'applie
  modal(close=>{const f={};const fld=(k,l,type,opts)=>{const el=opts?h('select',{class:'input',id:'af-'+k},opts.map(o=>h('option',{value:o,selected:a[k]===o},o))):h(type==='area'?'textarea':'input',{class:'input',id:'af-'+k,type:type==='area'?null:type,rows:type==='area'?'3':null});if(!opts)el.value=a[k]||'';f[k]=el;return h('div',{class:'field'},h('label',{for:'af-'+k,text:l}),el)};
   return h('div',{class:'stack'},h('h2',{text:id?'Edit application':'Add application'}),h('div',{class:'grid g2'},fld('company','Company','text'),fld('role','Role','text')),fld('link','Job link','url'),
    h('div',{class:'grid g2'},fld('source','Source','text',['Naukri','LinkedIn','Internshala','Indeed','Company site','Referral','Other']),fld('status','Status','text',APPST)),h('div',{class:'grid g2'},fld('applied','Applied on','date'),fld('next','Next step date','date')),fld('notes','Notes (JD skills match, contact, follow-up)','area'),
-   h('div',{class:'row between',style:{marginTop:'6px'}},id?h('button',{class:'btn danger',onclick:()=>{close();confirmBox('Delete application?',(a.company||'')+' tracker se hat jayega.','Delete',()=>{S.kit.apps[id]={del:true,t:now()};save();rerender()},true)}},ic('trash','sm'),'Delete'):h('span'),
-    h('div',{class:'row'},h('button',{class:'btn ghost',onclick:close},'Cancel'),h('button',{class:'btn primary',onclick:()=>{const o={};for(const k in f)o[k]=f[k].value.trim();if(!o.company){toast('Company ka naam likho');return}o.t=now();S.kit.apps[id||('a'+now().toString(36))]=o;save();close();rerender();toast('Saved')}},'Save'))))})}
+   h('div',{class:'row between',style:{marginTop:'6px'}},id?h('button',{class:'btn danger',onclick:()=>{close();confirmBox('Delete application?',(a.company||'')+' will be removed from the tracker.','Delete',()=>{S.kit.apps[id]={del:true,t:now()};save();rerender()},true)}},ic('trash','sm'),'Delete'):h('span'),
+    h('div',{class:'row'},h('button',{class:'btn ghost',onclick:close},'Cancel'),h('button',{class:'btn primary',onclick:()=>{const o={};for(const k in f)o[k]=f[k].value.trim();if(!o.company){toast('Enter the company name');return}o.t=now();S.kit.apps[id||('a'+now().toString(36))]=o;save();close();rerender();toast('Saved')}},'Save'))))})}
 
 /* ---------- settings ---------- */
 function viewSettings(){const wrap=h('div',{class:'wrap'});add(wrap,[h('div',{class:'pagehead'},h('div',{},h('h1',{text:'Settings'}),h('p',{text:'Sync, backup, theme, Python runner.'})))]);
  const em=Drive.email();const masked=em?em.replace(/^(.{2}).*(@.*)$/,'$1•••$2'):'';
  add(wrap,[h('div',{class:'grid g2'},
-  h('div',{class:'card'},h('h3',{text:'Google Drive sync'}),h('p',{class:'small',id:'syncstat',text:Drive.status().t}),h('p',{class:'tiny muted',text:'Progress file "'+CFG.FILE+'" Drive ke "'+CFG.FOLDER+'" folder mein. Har change ke 4 s baad auto-sync. Claude bhi Drive connector se ise padh sakta hai.'}),
+  h('div',{class:'card'},h('h3',{text:'Google Drive sync'}),h('p',{class:'small',id:'syncstat',text:Drive.status().t}),h('p',{class:'tiny muted',text:'Progress file "'+CFG.FILE+'" in the Drive folder "'+CFG.FOLDER+'". Auto-sync runs 4 s after every change. Claude can also read it through the Drive connector.'}),
    masked?h('p',{class:'tiny muted',text:'Signed in: '+masked}):null,
    h('div',{class:'row wrap'},Drive.conn()?h('button',{class:'btn primary',onclick:()=>{if(Drive.ok())Drive.sync(true);else Drive.signIn()}},ic('refresh','sm'),'Sync now'):h('button',{class:'btn primary',onclick:()=>Drive.signIn(),disabled:Drive.notReady()},ic('cloud','sm'),'Connect Drive'),
     Drive.conn()?h('a',{class:'btn',href:Drive.folderUrl(),target:'_blank',rel:'noopener'},ic('ext','sm'),'Open folder'):null,Drive.conn()?h('button',{class:'btn ghost',onclick:()=>{Drive.signOut();rerender()}},ic('logout','sm'),'Disconnect'):null)),
   h('div',{class:'card'},h('h3',{text:'Theme'}),h('div',{class:'row wrap'},[['system','System'],['light','Light'],['dark','Dark']].map(([v,l])=>h('button',{class:'btn'+((S.settings.theme||'system')===v?' primary':''),onclick:()=>{S.settings.theme=v;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}applyTheme();rerender()}},ic(v==='dark'?'moon':'sun','sm'),l)))),
   runnerCard(),
-  h('div',{class:'card'},h('h3',{text:'Backup file'}),h('p',{class:'tiny muted',text:'Drive ke alawa manual JSON backup. Import merge karta hai (naya data jeet-ta hai), kuch delete nahi karta.'}),
+  h('div',{class:'card'},h('h3',{text:'Backup file'}),h('p',{class:'tiny muted',text:'Manual JSON backup in addition to Drive. Import merges (newer data wins) and deletes nothing.'}),
    h('div',{class:'row wrap'},h('button',{class:'btn',onclick:exportJSON},ic('download','sm'),'Export JSON'),h('label',{class:'btn'},ic('upload','sm'),'Import JSON',h('input',{type:'file',accept:'.json,application/json',class:'sr',onchange:e=>importJSON(e.target.files[0])})))),
   feedbackCard(),
-  h('div',{class:'card'},h('h3',{text:'Danger zone'}),h('p',{class:'tiny muted',text:'Is browser ka saara progress hata deta hai. Drive file tab tak bachi rahegi jab tak agla sync na ho.'}),h('button',{class:'btn danger',onclick:()=>confirmBox('Reset all progress?','Is device ka saara DA Journey progress delete hoga. Pehle Export kar lo.','Next',()=>confirmBox('Pakka?','Ye undo nahi hoga.','Reset everything',()=>{const th=S.settings.theme;S=freshState();S.settings.theme=th;localStorage.setItem(LS,JSON.stringify(S));toast('Reset done');rerender()},true),true)},ic('trash','sm'),'Reset progress')),
+  h('div',{class:'card'},h('h3',{text:'Danger zone'}),h('p',{class:'tiny muted',text:'Removes all progress from this browser. The Drive file stays until the next sync.'}),h('button',{class:'btn danger',onclick:()=>confirmBox('Reset all progress?','All DA Journey progress on this device will be deleted. Export first.','Next',()=>confirmBox('Pakka?','This cannot be undone.','Reset everything',()=>{const th=S.settings.theme;S=freshState();S.settings.theme=th;localStorage.setItem(LS,JSON.stringify(S));toast('Reset done');rerender()},true),true)},ic('trash','sm'),'Reset progress')),
   h('div',{class:'card'},h('h3',{text:'About'}),h('p',{class:'small',text:'DA Journey v'+APP_VER+' · content '+C.v}),h('p',{class:'tiny muted',text:'Plan: '+fmtDY(C.meta.start)+' to '+fmtDY(C.meta.end)+', '+IX.study.length+' study days. Practice files: Satish Dhawale (GitHub), codebasics challenges. Python content imported from the old Python trial.'})))]);
  return wrap}
-function runnerCard(){const st=h('p',{class:'small'});const card=h('div',{class:'card'},h('h3',{text:'Python + SQL runner'}),st,h('p',{class:'tiny muted',text:'Pyodide (Python in browser) + sqlite3; numpy/pandas/scipy pehli zaroorat par load. Pehli baar internet chahiye.'}),
+function runnerCard(){const st=h('p',{class:'small'});const card=h('div',{class:'card'},h('h3',{text:'Python + SQL runner'}),st,h('p',{class:'tiny muted',text:'Pyodide (Python in the browser) + sqlite3; numpy/pandas/scipy load when first needed. Needs internet the first time.'}),
   h('div',{class:'row wrap'},h('button',{class:'btn',onclick:()=>Runner.start()},ic('play','sm'),'Load now'),h('button',{class:'btn ghost',onclick:()=>Runner.restart()},ic('refresh','sm'),'Restart')));
  const upd=()=>{st.textContent={idle:'Not loaded yet',loading:'Loading…',ready:'Ready (Python '+Runner.version+')',failed:'Failed: '+Runner.error}[Runner.state]};upd();Runner.ls.add(upd);return card}
 function exportJSON(){const b=new Blob([JSON.stringify(Object.assign({},S,{_summary:summary(),_exported:new Date().toISOString()}),null,1)],{type:'application/json'});const a=h('a',{href:URL.createObjectURL(b),download:'da-journey-backup-'+todayISO()+'.json'});document.body.appendChild(a);a.click();a.remove()}
@@ -1061,21 +1076,21 @@ function importJSON(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{c
 async function boot(){loadState();applyTheme();
  document.body.innerHTML='<div class="loading"><div><div class="spin"></div>Loading DA Journey…</div></div>';
  await Drive.boot();
- try{const r=await fetch('content.json',{cache:'no-cache'});C=await r.json()}catch(e){try{const r=await fetch('content.json');C=await r.json()}catch(e2){document.body.innerHTML='<div class="loading">Content load nahi hua. Internet check karo aur reload karo.</div>';return}}
+ try{const r=await fetch('content.json',{cache:'no-cache'});C=await r.json()}catch(e){try{const r=await fetch('content.json');C=await r.json()}catch(e2){document.body.innerHTML='<div class="loading">Content did not load. Check your internet connection and reload.</div>';return}}
  indexContent();lastLevel=xpInfo().L;if(!unlocked){lockView();return}shell();route(false);
  if(Drive.conn())Drive.auto(true);
  if('serviceWorker' in navigator&&!DEV&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});}
 boot();
 
 /* ---------- feedback for Claude (self-improving loop) ---------- */
-function feedbackForm(where){modal(close=>{const ta=h('textarea',{class:'input',rows:'5',id:'fbtext',placeholder:'Kya problem aayi / kya better ho sakta hai? Kab hua, kitni baar, kya expect kiya tha.'});const wh=h('input',{class:'input',id:'fbwhere',value:where||'',placeholder:'Kahan (screen / day / task)'});
- return h('div',{class:'stack'},h('h2',{text:'Feedback for Claude'}),h('p',{class:'small muted',text:'Ye note Drive backup mein jaata hai. Claude ke paas "DA Journey feedback dekho" bolo: Claude padhke root cause check karega aur system improve karega.'}),
+function feedbackForm(where){modal(close=>{const ta=h('textarea',{class:'input',rows:'5',id:'fbtext',placeholder:'What went wrong or what could be better? When it happened, how often, what you expected.'});const wh=h('input',{class:'input',id:'fbwhere',value:where||'',placeholder:'Where (screen / day / task)'});
+ return h('div',{class:'stack'},h('h2',{text:'Feedback for Claude'}),h('p',{class:'small muted',text:'This note goes into the Drive backup. Ask Claude in chat to check your DA Journey feedback: Claude reads it, finds the root cause and improves the system.'}),
   h('div',{class:'field'},h('label',{for:'fbwhere',text:'Kahan'}),wh),h('div',{class:'field'},h('label',{for:'fbtext',text:'Problem / insight'}),ta),
-  h('div',{class:'row',style:{justifyContent:'flex-end'}},h('button',{class:'btn ghost',onclick:close},'Cancel'),h('button',{class:'btn primary',onclick:()=>{const v=ta.value.trim();if(v.length<5){toast('Thoda detail likho');return}
-   S.fb['f'+now().toString(36)]={text:v,where:wh.value.trim(),day:(currentDay()||{}).n||0,status:'open',created:new Date().toISOString(),t:now()};save();close();toast('Feedback saved. Claude ko batao.');rerender()}},'Save')))})}
+  h('div',{class:'row',style:{justifyContent:'flex-end'}},h('button',{class:'btn ghost',onclick:close},'Cancel'),h('button',{class:'btn primary',onclick:()=>{const v=ta.value.trim();if(v.length<5){toast('Add a little more detail');return}
+   S.fb['f'+now().toString(36)]={text:v,where:wh.value.trim(),day:(currentDay()||{}).n||0,status:'open',created:new Date().toISOString(),t:now()};save();close();toast('Feedback saved. Let Claude know.');rerender()}},'Save')))})}
 function feedbackCard(){const items=Object.entries(S.fb||{}).sort((a,b)=>(b[1].t||0)-(a[1].t||0));const open=items.filter(([,f])=>f.status==='open');
  return h('div',{class:'card'},h('div',{class:'row between'},h('h3',{style:{margin:0},text:'Feedback for Claude'}),h('span',{class:'est',text:open.length+' open'})),
-  h('p',{class:'tiny muted',text:'Self-improving app: jo bhi problem ya idea aaye yahan likho (ya chat mein batao). Claude root cause dhoondh ke poore system mein fix karega.'}),
+  h('p',{class:'tiny muted',text:'Self-improving app: write any problem or idea here (or tell Claude in chat). Claude finds the root cause and fixes it across the whole system.'}),
   h('button',{class:'btn primary sm',onclick:()=>feedbackForm('')},ic('plus','sm'),'New feedback'),
   items.length?h('div',{style:{marginTop:'10px'}},items.slice(0,8).map(([id,f])=>h('div',{class:'checkrow'},h('button',{class:'check'+(f.status==='done'?' on':''),'aria-label':'Mark resolved: '+f.text.slice(0,40),onclick:()=>{S.fb[id]=Object.assign({},f,{status:f.status==='done'?'open':'done',t:now()});save();rerender()}},ic('check','sm')),
    h('div',{},h('div',{class:'small',style:{textDecoration:f.status==='done'?'line-through':''},text:f.text}),h('div',{class:'tiny muted',text:(f.where||'')+' · '+(f.created||'').slice(0,10)}))))):null)}
