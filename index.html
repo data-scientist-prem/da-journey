@@ -386,7 +386,7 @@ input.vol{width:130px;accent-color:var(--primary)}
 <script>
 'use strict';
 /* ===== DA Journey v2 ===== */
-const APP_VER='2026.11.26-6';
+const APP_VER='2026.11.26-7';
 const CFG={
  CLIENT_ID:'331264298614-jr5f5ib5o7jkaqrbs3k7nla4gm7lsrv2.apps.googleusercontent.com', // set after the "DA Journey" Google Cloud project is created
  OWNER_H:'e3f2701c4914321da0c06ace2cb5fad3a3b71419d9da7f3de73f83a503bdaa1b', // SHA-256 of the owner's Google email (same owner as Hunter System)
@@ -577,6 +577,8 @@ function setTaskDone(t,v,extra){const x0=xpInfo().xp;const sc0=computeSchedule()
  if(!sk0){const si=streakInfo();if(si.todayCounts)setTimeout(()=>{Sfx.play('streak');toast('Streak extended: '+plural(si.cur,'day'));const ts=document.getElementById('topstreak');if(ts){ts.classList.remove('bump');void ts.offsetWidth;ts.classList.add('bump')}},450)}
  // a whole later day finished today: it moves into today and every later day moves up one number
  const reallyAhead=ahead&&T1&&dd._i>T1.gi;
+ if(ahead&&!T1&&isBonusDate(todayISO())){if(!wasDone&&realDone(dd)){setTimeout(()=>celebrate('day','Day '+gs0.n+' done on a rest day!','Bonus work: the plan moved up by one day.'),300);lastLevel=xpInfo().L;return}
+  setTimeout(()=>{Sfx.play('move');toast('Bonus (rest day): Day '+gs0.n+' gets lighter.')},250);checkLevelUp();return}
  if(ahead&&!reallyAhead&&T1&&dd._i===T1.gi){setTimeout(()=>{Sfx.play('move');toast('Today became Day '+T1.n+'.')},250);checkLevelUp();return}
  if(reallyAhead&&!wasDone&&realDone(dd)){const n=gs0.n,k=T1?T1.n:n;setTimeout(()=>celebrate('day','Day '+n+' done in advance!','It moved into Day '+k+' (today). The old Day '+(n+1)+' is now Day '+n+'; every later day moved up by one.'),300);lastLevel=xpInfo().L;return}
  if(reallyAhead){setTimeout(()=>{Sfx.play('move');toast('Done ahead: moved to Day '+(T1?T1.n:'')+' (today), under "Done ahead".')},250);checkLevelUp();return}
@@ -634,11 +636,12 @@ function computeSchedule(){const t=todayISO(),G=IX.study;
  const doneBy=(g,dt)=>!!g._cd&&g._cd<=dt;
  const firstInc=(from,dt)=>{for(let i=from;i<G.length;i++)if(!doneBy(G[i],dt))return i;return G.length};
  const worked=dt=>(by[dt]||[]).some(x=>x.kind!=='log');
- const past=Object.keys(by).filter(dt=>dt<t&&worked(dt)).sort();
+ // work on a rest day (Sunday) or a fixed off day is a bonus, not a day (Prem, 26 Nov): the next day just gets lighter
+ const past=Object.keys(by).filter(dt=>dt<t&&worked(dt)&&!isBonusDate(dt)).sort();
  const slots=[];let s=firstInc(0,past.length?addDays(past[0],-1):addDays(t,-1));
  for(const D of past){slots.push({n:slots.length+1,date:D,kind:'past',g:G[s]||null,gi:s,off:isUserOff(D)});s=isUserOff(D)?firstInc(s,D):firstInc(s+1,D)}
  let todaySlot=null;const tOff=isUserOff(t);
- if(worked(t)||!isOffDate(t)){todaySlot={n:slots.length+1,date:t,kind:'today',g:G[s]||null,gi:s,off:tOff};slots.push(todaySlot)}
+ if((worked(t)&&!isBonusDate(t))||!isOffDate(t)){todaySlot={n:slots.length+1,date:t,kind:'today',g:G[s]||null,gi:s,off:tOff};slots.push(todaySlot)}
  const ns=todaySlot?(tOff?firstInc(s,t):firstInc(s+1,t)):s;
  let dt=todaySlot?addDays(t,1):t;
  for(let i=ns;i<G.length;i++){if(doneBy(G[i],t))continue;dt=nextStudyDate(dt);slots.push({n:slots.length+1,date:dt,kind:'future',g:G[i],gi:i});dt=addDays(dt,1)}
@@ -651,14 +654,15 @@ function computeSchedule(){const t=todayISO(),G=IX.study;
  let carry=0;if(todaySlot)for(let i=0;i<todaySlot.gi&&i<G.length;i++)for(const x of G[i].tasks)if(x.must&&x.kind!=='log'&&!tDone(x))carry+=x.min;
  let pe=end;for(let k=Math.floor(carry/240);k>0;k--)pe=nextStudyDate(addDays(pe,1));
  SCHED={today:t,slots,todaySlot,end,projEnd:pe,groupSlot:gsl,carryMin:carry};return SCHED}
+const isBonusDate=dt=>(isRestDow(dt)||isFixedOff(dt))&&!isUserOff(dt);
 const slotByN=n=>SCHED.slots.find(x=>x.n===+n)||null;
 const dayNo=g=>{const sl=g&&SCHED.groupSlot[g.id];return sl?sl.n:(g?g.n:0)};
 // what a day page shows
-function slotTasks(sl){const G=IX.study,out={carry:[],main:[],ahead:[],earlierDone:0,movedOut:0};if(!sl)return out;
+function slotTasks(sl){const G=IX.study,out={carry:[],main:[],ahead:[],bonus:[],earlierDone:0,movedOut:0};if(!sl)return out;
  if(sl.kind==='future'){out.main=sl.g.tasks.filter(x=>!tDone(x));out.earlierDone=sl.g.tasks.filter(x=>tDone(x)&&x.kind!=='log').length;return out}
  const D=sl.date,isT=sl.kind==='today';
  for(let i=0;i<G.length;i++){const g=G[i];for(const x of g.tasks){const dd=doneDate(x);
-  if(i===sl.gi){if(dd===D||(!dd&&isT))out.main.push(x);else if(x.kind==='log')continue;else if(dd&&dd<D)out.earlierDone++;else out.movedOut++}
+  if(i===sl.gi){if(dd===D||(!dd&&isT))out.main.push(x);else if(x.kind==='log')continue;else if(dd&&dd<D){if(isBonusDate(dd))out.bonus.push(x);else out.earlierDone++}else out.movedOut++}
   else if(x.kind==='log')continue;
   else if(i<sl.gi){if(dd===D||(!dd&&isT))out.carry.push(x)}
   else if(dd===D)out.ahead.push(x)}}
@@ -948,8 +952,8 @@ function viewDay(sl){const t=todayISO();
   h('div',{class:'row wrap'},offBtn,prev?h('a',{class:'btn sm',href:hrefOf(prev),'aria-label':'Previous day'},ic('left','sm'),'Day '+prev.n):null,next?h('a',{class:'btn sm',href:hrefOf(next),'aria-label':'Next day'},'Day '+next.n,ic('right','sm')):null))]);
  if(isToday){const ms=missedSince();if(ms.length&&!ui.missedHide)add(wrap,[h('div',{class:'note amber slidein',style:{marginBottom:'14px'}},ic('cal','sm'),' No study on '+ms.map(fmtD).join(', ')+' and no day off taken, so the plan moved forward by '+plural(ms.length,'day')+'. Were you unwell or busy? Mark it as a day off to keep your streak safe. ',
   h('span',{class:'row wrap',style:{gap:'6px',marginTop:'6px'}},ms.filter(x=>x>=addDays(t,-2)).map(x=>h('button',{class:'btn sm ghost offbtn',onclick:()=>dayOffDialog(x,null)},ic('coffee','sm'),'Mark '+fmtD(x)+' as day off')),h('button',{class:'linkbtn',onclick:()=>{ui.missedHide=true;rerender()}},'OK')))])}
- if(isToday&&isOffDate(t))add(wrap,[h('div',{class:'note amber',style:{marginBottom:'14px'}},ic('coffee','sm'),' Today is a rest day. The work you do today still counts as a day.')]);
- if(isFut)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Scheduled for '+fmtD(sl.date)+'. A task you tick here is done today: it leaves this day and shows on Day '+(SCHED.todaySlot?SCHED.todaySlot.n:'')+' (today) under "Done ahead". Finish all of this day\'s must tasks today and the whole day moves into today, so every later day moves up one number. ',SCHED.todaySlot?h('a',{href:'#/today'},'Go to Today'):null)]);
+ if(isFut&&!SCHED.todaySlot)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Today is a rest day. A task you tick here counts as bonus work: it is done, and this day gets lighter. Finish all of this day\'s must tasks and the plan moves up by one day.')]);
+ else if(isFut)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Scheduled for '+fmtD(sl.date)+'. A task you tick here is done today: it leaves this day and shows on Day '+(SCHED.todaySlot?SCHED.todaySlot.n:'')+' (today) under "Done ahead". Finish all of this day\'s must tasks today and the whole day moves into today, so every later day moves up one number. ',SCHED.todaySlot?h('a',{href:'#/today'},'Go to Today'):null)]);
  const mustL=st.carry.concat(st.main).filter(x=>x.must&&x.kind!=='log');const dn=mustL.filter(tDone);
  const tm=mustL.reduce((a,x)=>a+x.min,0),dm=dn.reduce((a,x)=>a+x.min,0);const pct=isPast?1:(tm?dm/tm:0);const complete=isToday&&todayComplete();
  const st2=streakInfo(),x=xpInfo();
@@ -977,6 +981,7 @@ function viewDay(sl){const t=todayISO();
  if(isToday){add(list,[sec('Pending from earlier days',cm,{icon:'cal',cls:'carry',from:true,note:'Unfinished must tasks from earlier days. Finish these too.'}),sec('Optional from earlier days',cs,{icon:'cal',collapsed:true,from:true})])}
  add(list,[sec(isPast?'Planned for this day':'Must',st.main.filter(z=>z.must)),sec('Stretch (optional)',st.main.filter(z=>!z.must))]);
  if(isPast)add(list,[sec('Finished from earlier days',st.carry,{icon:'cal',from:true})]);
+ add(list,[sec('Done on a rest day (bonus)',st.bonus,{icon:'star',collapsed:true,note:'Tasks of this day you finished on a Sunday or another rest day. They count, so this day is lighter.'})]);
  add(list,[sec('Done ahead',st.ahead,{icon:'zap',cls:'ahead slidein',from:true,note:isFut?'':'Ticked from later days. They are done, so those days got lighter (a fully finished day moved here and the days after it moved up).'})]);
  if(isFut&&st.earlierDone)add(list,[h('p',{class:'tiny muted',text:plural(st.earlierDone,'task')+' of this day were already done ahead; they show on the day they were done.'})]);
  add(list,[logCard(sl.date,g?[g]:[])]);
@@ -988,7 +993,7 @@ function offDayView(dt){const inf=offInfo(dt)||{kind:'rest',title:'No study sche
  return h('div',{class:'wrap'},h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(dt===t?'Today · ':'')+fmtD(dt)}),h('h1',{text:inf.title}),h('p',{text:inf.note}))),
   h('div',{class:'card donecard offcard popin'},h('div',{class:'big officon'},ic('coffee','lg'),h('span',{class:'steam'},h('i'),h('i'),h('i'))),
    h('h2',{text:inf.kind==='user'?'Enjoy the break':inf.kind==='fixed'?'No DA tasks today':'Rest day'}),
-   h('p',{class:'muted',text:'Your streak is safe today.'+(nx?' Next: Day '+nx.n+' · '+nx.title+' on '+fmtD(nx.date)+'.':'')}),
+   h('p',{class:'muted',text:'Your streak is safe today.'+(nx?' Next: Day '+nx.n+' · '+nx.title+' on '+fmtD(nx.date)+'.':'')+(inf.kind!=='user'&&dt===t?' Feel like studying? Open Day '+(nx?nx.n:'')+' and tick tasks: they count as bonus, so that day gets lighter. Finish all of it and the plan moves up a day.':'')}),
    (()=>{const dn=doneOn(dt);if(!dn.length)return null;return h('div',{class:'donetoday slidein'},h('div',{class:'glab',text:(dt===t?'Done today':'Done on '+fmtD(dt))+' · '+plural(dn.length,'task')+' · '+fmtMin(dn.reduce((a,x)=>a+x.t.min,0))}),
      h('ul',{},dn.map(x=>h('li',{},ic('check','sm'),x.t.t))))})(),
    h('div',{class:'row wrap',style:{justifyContent:'center',gap:'8px'}},
@@ -1070,7 +1075,7 @@ function viewPlan(){computeSchedule();const wrap=h('div',{class:'wrap'});const S
  add(wrap,[h('div',{class:'card',style:{marginBottom:'20px'}},h('div',{class:'row between'},h('b',{text:'Content done'}),h('span',{class:'est',text:Math.round(gDone/IX.study.length*100)+'%'})),h('div',{class:'bar',style:{marginTop:'8px'}},h('i',{style:{width:(gDone/IX.study.length*100)+'%'}})),
   h('p',{class:'small',style:{margin:'10px 0 0'},text:paceTxt}),
   SCHED.carryMin?h('p',{class:'small',style:{margin:'6px 0 0'},text:'~'+fmtMin(SCHED.carryMin)+' of unfinished must work is carried into today.'}):null,
-  h('p',{class:'tiny muted',style:{margin:'6px 0 0'},text:'A day is a study date. Unfinished tasks move to the next day (on top). Tasks of a later day done today move to today\'s page; a later day finished today moves into today and every later day moves up one number. A day off pushes everything by one study day. Sundays are rest days; 7-8 Dec is Milestone 3.'}),
+  h('p',{class:'tiny muted',style:{margin:'6px 0 0'},text:'A day is a study date. Unfinished tasks move to the next day (on top). Tasks of a later day done today move to today\'s page; a later day finished today moves into today and every later day moves up one number. A day off pushes everything by one study day. Sundays are rest days; work done on a rest day is a bonus (that day gets lighter; a whole day finished moves the plan up). 7-8 Dec is Milestone 3.'}),
   upOff.length?h('div',{class:'row wrap',style:{gap:'6px',marginTop:'10px'}},h('span',{class:'tiny muted',text:'Planned days off:'}),upOff.map(x=>h('button',{class:'chip plain offchip',title:'Remove this day off',onclick:()=>confirmBox('Remove day off on '+fmtD(x)+'?','The plan moves back by one study day.','Remove',()=>{setDayOff(x,false);rerender()})},ic('coffee','sm'),fmtD(x),ic('x','sm')))):null)]);
  C.meta.blocks.forEach(b=>{const sd=SL.filter(x=>x.g&&x.g.block===b.id);if(!sd.length)return;const gb=IX.study.filter(d=>d.block===b.id);const bd=gb.filter(d=>realDone(d)).length;
   const ds=sd.map(x=>x.date).sort();const a=ds[0],z=ds[ds.length-1];const tiles=sd.map(x=>({dt:x.date,n:x.n,el:()=>dayTile(x)}));
