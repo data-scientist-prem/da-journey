@@ -304,6 +304,38 @@ html[data-theme="dark"] .frz{color:#7dd3fc}
 .guide ol li+li{margin-top:3px}
 .guide .gdone .glab{color:var(--primary-text)}
 .guide ul{margin:6px 0 0;padding-left:20px;font-size:.9rem;line-height:1.5}
+/* ---- dynamic schedule + day off (26 Nov 2026) ---- */
+.btn.offbtn{border:1px dashed var(--border2);color:var(--amber-text)}
+.btn.offbtn:hover{border-style:solid;background:var(--amber-soft)}
+.linkbtn{background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;font-weight:600}
+.officon{position:relative;display:inline-flex;align-items:center;justify-content:center;color:var(--amber-text)}
+.officon svg{animation:offfloat 3.2s ease-in-out infinite}
+.officon.small{margin-bottom:6px}
+.officon .steam{position:absolute;top:-10px;left:50%;transform:translateX(-50%);display:flex;gap:5px}
+.officon .steam i{display:block;width:4px;height:12px;border-radius:4px;background:currentColor;opacity:0;animation:steam 2.4s ease-in-out infinite}
+.officon .steam i:nth-child(2){animation-delay:.5s}.officon .steam i:nth-child(3){animation-delay:1s}
+@keyframes offfloat{50%{transform:translateY(-3px) rotate(-3deg)}}
+@keyframes steam{0%{opacity:0;transform:translateY(6px) scaleY(.6)}40%{opacity:.45}100%{opacity:0;transform:translateY(-10px) scaleY(1.2)}}
+.offcard{text-align:center}
+.popin{animation:popin .35s ease-out both}
+.slidein{animation:slidein .4s ease-out both}
+@keyframes slidein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.split.leaving>*{animation:leave .38s ease-in forwards}
+.split.leaving>*:nth-child(2){animation-delay:.05s}
+@keyframes leave{to{opacity:0;transform:translateX(40px)}}
+.dtile.useroff{border:1px dashed var(--amber);color:var(--amber-text);background:var(--amber-soft);cursor:pointer;text-align:left;font:inherit}
+.dtile.useroff .t{display:flex;align-items:center;gap:4px}
+.offchip{cursor:pointer;color:var(--amber-text);background:var(--amber-soft);border:0}
+.chip.pick{cursor:pointer;border:1px solid var(--border);background:transparent;transition:background .15s,color .15s,border-color .15s}
+.chip.pick.on{background:var(--primary-soft);color:var(--primary-text);border-color:var(--primary)}
+.dtile{transition:transform .15s ease,box-shadow .15s ease}
+.dtile.cur{animation:popin .35s ease-out both}
+@media (prefers-reduced-motion:reduce){.officon svg,.officon .steam i,.popin,.slidein,.split.leaving>*,.dtile.cur{animation:none!important}}
+.donecard .big.officon{background:var(--amber-soft);color:var(--amber-text);overflow:visible}
+.donetoday{text-align:left;max-width:560px;margin:14px auto 16px;border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:var(--surface)}
+.donetoday .glab{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--primary-text);margin-bottom:6px}
+.donetoday ul{list-style:none;margin:0;padding:0}.donetoday li{display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:.9rem}
+.donetoday li svg{color:var(--primary);flex:none;margin-top:3px}.donetoday a{color:inherit;text-decoration:none}.donetoday a:hover{text-decoration:underline}
 
 </style>
 </head>
@@ -312,7 +344,7 @@ html[data-theme="dark"] .frz{color:#7dd3fc}
 <script>
 'use strict';
 /* ===== DA Journey v2 ===== */
-const APP_VER='2026.11.26-2';
+const APP_VER='2026.11.26-3';
 const CFG={
  CLIENT_ID:'331264298614-jr5f5ib5o7jkaqrbs3k7nla4gm7lsrv2.apps.googleusercontent.com', // set after the "DA Journey" Google Cloud project is created
  OWNER_H:'e3f2701c4914321da0c06ace2cb5fad3a3b71419d9da7f3de73f83a503bdaa1b', // SHA-256 of the owner's Google email (same owner as Hunter System)
@@ -427,7 +459,7 @@ const KIND_IC={learn:'video',practice:'code',log:'pen',engage:'users',build:'too
 /* ---------- content + indexes ---------- */
 let C=null;const IX={day:{},study:[],set:{},item:{},task:{},bySet:{},date:{}};
 function indexContent(){
- C.days.forEach(d=>{IX.day[d.id]=d;IX.date[d.date]=d;if(d.type==='study'){IX.study.push(d);d.tasks.forEach(t=>{IX.task[t.id]={t,d};if(t.set)(IX.bySet[t.set]=IX.bySet[t.set]||[]).push(t)})}});
+ C.days.forEach(d=>{d.base=d.base||d.date;IX.day[d.id]=d;IX.date[d.base]=d;if(d.type==='study'){IX.study.push(d);d.tasks.forEach(t=>{IX.task[t.id]={t,d};if(t.set)(IX.bySet[t.set]=IX.bySet[t.set]||[]).push(t)})}});
  C.sets.forEach(s=>{IX.set[s.id]=s;(s.problems||[]).forEach((p,i)=>IX.item[p.id]={s,p,i,type:'prob'});(s.items||[]).forEach((p,i)=>IX.item[p.id]={s,p,i,type:'drill'})});
  IX.interview={};C.interview.forEach(b=>b.items.forEach(it=>IX.interview[it.id]={b,it}));
  IX.project={};C.projects.forEach(p=>IX.project[p.id]=p);
@@ -435,7 +467,7 @@ function indexContent(){
 }
 
 /* ---------- state ---------- */
-function freshState(){return{v:1,updated:0,tasks:{},logs:{},prac:{},quiz:{},iv:{},fb:{},kit:{checks:{},apps:{},proj:{}},settings:{theme:'system'}}}
+function freshState(){return{v:1,updated:0,tasks:{},logs:{},prac:{},quiz:{},iv:{},fb:{},off:{},kit:{checks:{},apps:{},proj:{}},settings:{theme:'system'}}}
 let S=freshState();
 function loadState(){try{const o=JSON.parse(localStorage.getItem(LS)||'null');if(o&&o.v===1){S=Object.assign(freshState(),o);S.kit=Object.assign({checks:{},apps:{},proj:{}},o.kit||{})}}catch(e){}}
 let saveTm=null;
@@ -444,15 +476,21 @@ function save(){S.updated=Date.now();try{localStorage.setItem(LS,JSON.stringify(
 // merge another state (from Drive or an import) into S: per entry, newer t wins
 function mergeState(o){if(!o||o.v!==1)return false;let ch=false;
  const mm=(a,b)=>{for(const k in b){const x=a[k],y=b[k];if(!y)continue;if(!x||(y.t||0)>(x.t||0)){a[k]=y;ch=true}}};
- for(const key of['tasks','logs','prac','quiz','iv','fb'])mm(S[key]=S[key]||{},o[key]||{});
+ for(const key of['tasks','logs','prac','quiz','iv','fb','off'])mm(S[key]=S[key]||{},o[key]||{});
+ if(migrateIds())ch=true;
  const ok=o.kit||{};for(const key of['checks','apps','proj'])mm(S.kit[key]=S.kit[key]||{},ok[key]||{});
  if(ch){S.updated=Math.max(S.updated,o.updated||0);try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}return ch}
 const now=()=>Date.now();
+// Task ids are content keys since 26 Nov 2026; C.idmap maps every older id to its new id so saved progress moves over.
+function migrateIds(){if(!C||!C.idmap)return false;let ch=false;
+ for(const o in C.idmap){const x=S.tasks[o];if(!x)continue;const n=C.idmap[o];const y=S.tasks[n];if(!y||(x.t||0)>(y.t||0))S.tasks[n]=x;delete S.tasks[o];ch=true}
+ return ch}
 
 /* ---------- plan logic ---------- */
 const tDone=t=>!!(S.tasks[t.id]&&S.tasks[t.id].done);
-function setTaskDone(t,v,extra){const x0=xpInfo().xp;const dd=IX.task[t.id]&&IX.task[t.id].d;const was=dd?dayStat(dd).st:'';
+function setTaskDone(t,v,extra){const x0=xpInfo().xp;const td0=computeSchedule().todayDay;const dd=IX.task[t.id]&&IX.task[t.id].d;const was=dd?dayStat(dd).st:'';
  const o=Object.assign({},S.tasks[t.id]||{},extra||{});o.done=v?(o.done||now()):0;o.t=now();if(v&&!o.date)o.date=todayISO();if(!v)delete o.date;S.tasks[t.id]=o;save();
+ {const td1=computeSchedule().todayDay;if(v&&td1&&td0&&td1.id!==td0.id&&td1.sched==='pending')setTimeout(()=>toast('Day '+td1.n+' moved into today'),300)}
  if(v){floatXP(xpInfo().xp-x0);if(dd&&was!=='done'&&dayStat(dd).st==='done'){const st=streakInfo();setTimeout(()=>celebrate('day','Day '+dd.n+' complete!','Streak: '+plural(st.cur,'day')+' · Level '+xpInfo().L),350);lastLevel=xpInfo().L;return}}
  checkLevelUp()}
 const mustOf=d=>d.tasks.filter(t=>t.must),stretchOf=d=>d.tasks.filter(t=>!t.must);
@@ -460,18 +498,48 @@ function dayStat(d){if(d.type!=='study')return{st:d.type,done:0,total:0,pct:0};c
  const dm=dn.reduce((a,t)=>a+t.min,0),tm=m.reduce((a,t)=>a+t.min,0);
  return{st:dn.length===m.length?'done':dn.length||d.tasks.some(tDone)?'part':'none',done:dm,total:tm,pct:tm?dm/tm:0,left:tm-dm,cnt:dn.length,n:m.length}}
 function currentDay(){for(const d of IX.study)if(dayStat(d).st!=='done')return d;return null}
-function plannedDayFor(dateISO){let p=null;for(const d of IX.study){if(d.date<=dateISO)p=d;else break}return p}
-function pace(){const cur=currentDay();const t=todayISO();const pl=plannedDayFor(t);
- if(!cur)return{finished:true,diff:0};const ci=cur.n;const pi=pl?pl.n:0;
- // behind = planned days whose date has passed (before today) that are not complete
- const behind=IX.study.filter(d=>d.date<t&&dayStat(d).st!=='done').length;
- const ahead=IX.study.filter(d=>d.date>t&&dayStat(d).st==='done').length;
- return{cur,planned:pl,behind,ahead,diff:ahead-behind}}
-function projectedFinish(){const p=pace();if(p.finished)return todayISO();
- // remaining study days at the planned rhythm (6 days/week), shifted by behind/ahead
- const last=IX.study[IX.study.length-1].date;let d=last,n=-p.diff;
- while(n>0){d=addDays(d,1);if(parseISO(d).getDay()!==0)n--}
- while(n<0){d=addDays(d,-1);if(parseISO(d).getDay()!==0)n++}return d}
+/* ---------- dynamic schedule (Prem, 26 Nov 2026) ----------
+ Plan days have no fixed dates. The schedule is rebuilt from progress on every render:
+ - a finished day keeps the date its last must task was done;
+ - the first unfinished day goes to today, unless today is a day off Prem took, or today is a rest/fixed-off day
+   and he has not worked today, or he already finished a day today and has not started the next one;
+ - each later day takes the next available date (not Sunday, not a fixed off date, not a day off).
+ So a day off pushes all pending work by one day, and starting the next day's tasks pulls that day into today.
+ Baseline dates from the content stay in d.base (used for the target and the planned line). */
+const isUserOff=dt=>!!(S.off&&S.off[dt]&&S.off[dt].on);
+const isFixedOff=dt=>!!(C.meta.fixedOff&&C.meta.fixedOff[dt]);
+const isRestDow=dt=>parseISO(dt).getDay()===(C.meta.restDow==null?0:C.meta.restDow);
+const isOffDate=dt=>isRestDow(dt)||isFixedOff(dt)||isUserOff(dt);
+function offInfo(dt){if(isUserOff(dt))return{kind:'user',title:'Day off',note:(S.off[dt].reason?S.off[dt].reason+'. ':'')+'You took this day off; pending work moved to the next study day.'};
+ if(isFixedOff(dt)){const f=C.meta.fixedOff[dt];return{kind:'fixed',title:f[0],note:f[1]}}
+ if(isRestDow(dt))return{kind:'rest',title:'Rest day',note:'Sunday: rest. Optional study still counts.'};return null}
+function nextStudyDate(dt){let x=dt;for(let i=0;i<400&&isOffDate(x);i++)x=addDays(x,1);return x}
+function doneDate(t){const o=S.tasks[t.id];return o&&o.done?(o.date||iso(new Date(o.done))):null}
+function lastDoneDate(d){let l='';mustOf(d).forEach(x=>{const dd=doneDate(x);if(dd&&dd>l)l=dd});return l}
+let SCHED={today:'',todayDay:null,doneToday:[],first:null,end:''};
+function computeSchedule(){const t=todayISO();const doneToday=[];let cursor=null,first=null;
+ const touchedToday=d=>d.tasks.some(x=>doneDate(x)===t);
+ for(const d of IX.study){const st=dayStat(d);
+  if(st.st==='done'){d.date=lastDoneDate(d)||d.base;d.sched='done';if(d.date===t)doneToday.push(d);continue}
+  if(cursor===null){first=d;
+   const canToday=!isUserOff(t)&&(touchedToday(d)||(!isOffDate(t)&&!doneToday.length));
+   cursor=canToday?t:nextStudyDate(addDays(t,1))}
+  else cursor=nextStudyDate(addDays(cursor,1));
+  d.date=cursor;d.sched='pending'}
+ const todayDay=first&&first.date===t?first:(doneToday.length?doneToday[doneToday.length-1]:null);
+ SCHED={today:t,todayDay,doneToday,first,end:IX.study.length?IX.study.reduce((m,d)=>d.date>m?d.date:m,''):t};return SCHED}
+function plannedDayFor(dateISO){let p=null;for(const d of IX.study){if(d.base<=dateISO)p=d;else break}return p}
+function studyDaysBetween(a,b){let n=0,x=a;while(x<b){x=addDays(x,1);if(!isRestDow(x)&&!isFixedOff(x))n++}return n}
+function pace(){computeSchedule();const cur=currentDay();const t=todayISO();const pl=plannedDayFor(t);
+ if(!cur)return{finished:true,diff:0,behind:0,ahead:0};
+ const pf=SCHED.end,tg=C.meta.target||C.meta.end;
+ const behind=pf>tg?studyDaysBetween(tg,pf):0,ahead=pf<tg?studyDaysBetween(pf,tg):0;
+ return{cur,planned:pl,behind,ahead,diff:ahead-behind,target:tg,projected:pf}}
+function projectedFinish(){computeSchedule();return currentDay()?SCHED.end:todayISO()}
+// days with no study and no day off since the last active day (the plan already moved; the streak may use a freeze)
+function missedSince(){const a=activity();const t=todayISO();const ds=Object.keys(a).filter(x=>x<t).sort();if(!ds.length)return[];
+ const out=[];for(let x=addDays(ds[ds.length-1],1);x<t;x=addDays(x,1))if(!isOffDate(x))out.push(x);return out}
+function setDayOff(dt,on,reason){const prevToday=computeSchedule().todayDay;S.off=S.off||{};S.off[dt]={on:!!on,t:now(),reason:reason||''};save()}
 
 /* ---------- practice helpers ---------- */
 const prs=id=>S.prac[id]||null;
@@ -490,7 +558,7 @@ function autoComplete(setId){let any=false;(IX.bySet[setId]||[]).forEach(t=>{con
 function activity(){const a={};for(const id in S.tasks){const o=S.tasks[id];if(!o.done)continue;const x=IX.task[id];if(!x)continue;const dt=o.date||iso(new Date(o.done));
  const r=a[dt]||(a[dt]={min:0,tasks:0,daysDone:0});r.min+=x.t.min;r.tasks++}
  IX.study.forEach(d=>{const st=dayStat(d);if(st.st==='done'){let last=0;mustOf(d).forEach(t=>{last=Math.max(last,S.tasks[t.id].done)});const dt=iso(new Date(last));(a[dt]||(a[dt]={min:0,tasks:0,daysDone:0})).daysDone++}});return a}
-const restDates=()=>{if(restDates.c)return restDates.c;const s=new Set();C.days.forEach(d=>{if(d.type!=='study')s.add(d.date)});return restDates.c=s};
+const restDates=()=>({has:dt=>isOffDate(dt)});
 function streakInfo(){const a=activity();const dates=Object.keys(a).sort();const t=todayISO();
  if(!dates.length)return{cur:0,best:0,freezes:0,usedFreeze:[]};
  let d=dates[0],cur=0,best=0,earned=0,fr=0,used=[];const counts=x=>a[x]&&(a[x].min>=90||a[x].daysDone>0);
@@ -599,10 +667,10 @@ const Drive=(()=>{
  const folderUrl=()=>{const f=localStorage.getItem('daj-folder');return f?'https://drive.google.com/drive/folders/'+f:'https://drive.google.com/drive/my-drive'};
  return{status,signIn:()=>go(false),signOut,sync,auto,boot,ok,conn,email,folderUrl,notReady}
 })();
-function summary(){const st=streakInfo(),x=xpInfo(),p=pace();const cur=currentDay();
+function summary(){const st=streakInfo(),x=xpInfo(),p=pace();const cur=currentDay();const tdy=SCHED.todayDay;const offs=Object.keys(S.off||{}).filter(isUserOff).sort();
  return{currentDay:cur?cur.n:'finished',currentDayTitle:cur?cur.title:'',plannedToday:p.planned?p.planned.n:0,behindDays:p.behind||0,aheadDays:p.ahead||0,
   daysDone:IX.study.filter(d=>dayStat(d).st==='done').length,totalDays:IX.study.length,xp:x.xp,level:x.L,streak:st.cur,bestStreak:st.best,
-  solved:Object.values(S.prac).filter(q=>q.ok).length,applications:Object.values(S.kit.apps).filter(a=>!a.del&&a.status!=='target').length,targets:Object.values(S.kit.apps).filter(a=>!a.del&&a.status==='target').length,projected:projectedFinish(),postDigest:postDigest(),openFeedback:Object.values(S.fb||{}).filter(f=>f.status==='open').map(f=>({where:f.where,text:f.text,day:f.day,created:f.created}))}}
+  solved:Object.values(S.prac).filter(q=>q.ok).length,applications:Object.values(S.kit.apps).filter(a=>!a.del&&a.status!=='target').length,targets:Object.values(S.kit.apps).filter(a=>!a.del&&a.status==='target').length,projected:projectedFinish(),target:C.meta.target||C.meta.end,scheduledToday:tdy?{day:tdy.n,title:tdy.title,status:tdy.sched}:null,daysOff:offs,daysOffCount:offs.length,postDigest:postDigest(),openFeedback:Object.values(S.fb||{}).filter(f=>f.status==='open').map(f=>({where:f.where,text:f.text,day:f.day,created:f.created}))}}
 // for Claude (reads this file via Google Drive): what to post about next
 function postDigest(){const cur=currentDay();const posts=IX.study.flatMap(x=>x.tasks.filter(y=>y.kind==='post').map(y=>({t:y,d:x})));
  const nextP=posts.find(p=>!tDone(p.t));const lastDone=[...posts].reverse().find(p=>tDone(p.t));
@@ -695,7 +763,7 @@ function updateSyncUI(){const el=$('#syncline');const s=Drive.status();if(el){el
 /* ---------- router ---------- */
 let curView='';
 function rerender(){route(true)}
-function route(keep){if(!C)return;if(!unlocked){lockView();return}
+function route(keep){if(!C)return;if(!unlocked){lockView();return}computeSchedule();
  if(!$('#view'))shell();const hs=(location.hash||'#/today').slice(2).split('?')[0].split('/');const k=hs[0]||'today';
  const v=$('#view');const y=keep?scrollY:0;v.innerHTML='';
  const map={today:()=>viewDay(null),day:()=>viewDay(IX.day[hs[1]]),plan:viewPlan,practice:()=>viewLibrary(hs[1]),set:()=>viewSet(hs[1],hs[2]),
@@ -717,18 +785,23 @@ function lockView(){document.body.innerHTML='';const msg=sessionStorage.getItem(
 /* ---------- day view (Today + any day) ---------- */
 function ringSVG(p,size){const r=46,c=2*Math.PI*r;return h('div',{html:`<svg viewBox="0 0 112 112" aria-hidden="true"><circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--surface3)" stroke-width="10"/><circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--primary)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-Math.min(1,p))}" style="transition:stroke-dashoffset .5s ease-out"/></svg>`}).firstChild}
 function blockOf(d){return C.meta.blocks.find(b=>b.id===d.block)||{title:''}}
-function paceText(d){const t=todayISO();const dd=daysBetween(t,d.date);
- if(dd===0)return'Planned for today';if(dd>0)return'Planned for '+fmtD(d.date)+(dd===1?' (tomorrow)':' (in '+dd+' days)');return'Planned for '+fmtD(d.date)+' ('+(-dd)+' days ago)'}
-function viewDay(d){const isToday=!d;if(isToday)d=currentDay();
- if(!d)return h('div',{class:'card donecard'},h('div',{class:'big'},ic('trophy','lg')),h('h1',{text:'All 109 days complete!'}),h('p',{class:'muted',text:'Journey complete. Focus on applications and interviews; keep using the Career kit tracker.'}));
+function paceText(d){const t=todayISO();if(d.sched==='done')return'Completed '+(d.date===t?'today':fmtD(d.date));const dd=daysBetween(t,d.date);
+ if(dd===0)return'Scheduled for today';return'Scheduled for '+fmtD(d.date)+(dd===1?' (tomorrow)':' (in '+dd+' days)')}
+function viewDay(d){const isToday=!d;const t0=todayISO();
+ if(isToday){const sc=SCHED;d=sc.todayDay;
+  if(!currentDay())return h('div',{class:'card donecard'},h('div',{class:'big'},ic('trophy','lg')),h('h1',{text:'All '+IX.study.length+' days complete!'}),h('p',{class:'muted',text:'Journey complete. Focus on applications and interviews; keep using the Career kit tracker.'}));
+  if(!d)return offDayView(t0)}
  if(d.type!=='study')return restDayView(d);
  const st=dayStat(d),p=pace(),t=todayISO();const wrap=h('div',{class:'wrap'});
  const idx=IX.study.indexOf(d),prev=IX.study[idx-1],next=IX.study[idx+1];
- let paceLine=paceText(d);if(isToday&&p.diff<0)paceLine+=' · '+plural(-p.diff,'day')+' behind';else if(isToday&&p.diff>0)paceLine+=' · '+plural(p.diff,'day')+' ahead';
+ let paceLine=paceText(d);if(isToday&&p.diff<0)paceLine+=' · '+plural(-p.diff,'day')+' behind the target';else if(isToday&&p.diff>0)paceLine+=' · '+plural(p.diff,'day')+' ahead of the target';
+ const offBtn=(isToday&&d.sched==='pending'&&d.date===t)?h('button',{class:'btn sm ghost offbtn',onclick:()=>dayOffDialog(t,d)},ic('coffee','sm'),'Take today off'):
+  (!isToday&&d.sched==='pending'&&d.date>t)?h('button',{class:'btn sm ghost offbtn',onclick:()=>dayOffDialog(d.date,d)},ic('coffee','sm'),'Day off on '+fmtD(d.date)):null;
  add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(isToday?'Today · ':'')+blockOf(d).title+' · Day '+d.n+' of '+IX.study.length}),h('h1',{text:d.title}),h('p',{text:paceLine})),
-  h('div',{class:'row'},prev?h('a',{class:'btn sm',href:'#/day/'+prev.id,'aria-label':'Previous day'},ic('left','sm'),'Day '+prev.n):null,next?h('a',{class:'btn sm',href:'#/day/'+next.id,'aria-label':'Next day'},'Day '+next.n,ic('right','sm')):null))]);
- if(isToday&&restDates().has(t))add(wrap,[h('div',{class:'note amber',style:{marginBottom:'14px'}},ic('coffee','sm'),' Today is a rest/off day in the plan. Rest, or continue if you want to.')]);
- if(!isToday&&currentDay()&&currentDay().id!==d.id&&d.n>currentDay().n)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'This is a future day. You can work on it, but finish Today\'s Day '+currentDay().n+' first. ',h('a',{href:'#/today'},'Go to Today'))]);
+  h('div',{class:'row wrap'},offBtn,prev?h('a',{class:'btn sm',href:'#/day/'+prev.id,'aria-label':'Previous day'},ic('left','sm'),'Day '+prev.n):null,next?h('a',{class:'btn sm',href:'#/day/'+next.id,'aria-label':'Next day'},'Day '+next.n,ic('right','sm')):null))]);
+ if(isToday){const ms=missedSince();if(ms.length&&!ui.missedHide)add(wrap,[h('div',{class:'note amber slidein',style:{marginBottom:'14px'}},ic('cal','sm'),' No study on '+ms.map(fmtD).join(', ')+' and no day off taken, so the plan moved forward by '+plural(ms.length,'day')+'. Next time tap "Take today off" to keep your streak safe. ',h('button',{class:'linkbtn',onclick:()=>{ui.missedHide=true;rerender()}},'Hide'))])}
+ if(isToday&&isOffDate(t)&&d.sched==='pending')add(wrap,[h('div',{class:'note amber',style:{marginBottom:'14px'}},ic('coffee','sm'),' Today is a rest day. The work you do today still counts.')]);
+ if(!isToday&&d.sched==='pending'&&currentDay()&&currentDay().id!==d.id)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Scheduled for '+fmtD(d.date)+'. If you start it today, it moves into today and the rest of the plan moves up. ',h('a',{href:'#/today'},'Go to Today'))]);
  const st2=streakInfo(),x=xpInfo();
  add(wrap,[h('section',{class:'card hero','aria-label':'Day progress'},h('div',{class:'ring'+(st.pct>=1?' full':'')},ringSVG(st.pct),h('div',{class:'lbl'},h('b',{text:Math.round(st.pct*100)+'%'}),h('span',{text:'must done'}))),
   h('div',{},h('h2',{style:{marginBottom:'6px'},text:st.st==='done'?'Day complete':st.cnt+' of '+st.n+' must tasks done'}),
@@ -738,7 +811,8 @@ function viewDay(d){const isToday=!d;if(isToday)d=currentDay();
  const list=h('div',{class:'stack'});
  if(st.st==='done'&&isToday===false&&currentDay()&&d.n<currentDay().n){}
  if(st.st==='done')add(list,[h('div',{class:'card donecard'},h('div',{class:'big'},ic('check','lg')),h('h2',{text:'Day '+d.n+' complete'}),h('p',{class:'muted',text:'Must tasks done. You can start the next day now, or do the stretch tasks.'}),
-  next?h('a',{class:'btn primary',href:isToday?'#/today':'#/day/'+next.id,onclick:()=>{if(isToday)setTimeout(rerender,0)}},'Start Day '+next.n,ic('right','sm')):null)]);
+  next&&next.sched==='pending'?h('a',{class:'btn primary',href:'#/day/'+next.id},'Continue with Day '+next.n,ic('right','sm')):null,
+  next&&next.sched==='pending'&&isToday?h('p',{class:'tiny muted',style:{marginTop:'8px'},text:'Day '+next.n+' is scheduled for '+fmtD(next.date)+'. Finishing any of its tasks today moves it into today.'}):null)]);
  const sel=ui.sel[d.id]&&IX.task[ui.sel[d.id]]?IX.task[ui.sel[d.id]].t:(mustOf(d).find(t=>!tDone(t))||d.tasks[0]);
  const panel=h('div',{class:'card detail sticky',id:'detail'});
  const select=t=>{ui.sel[d.id]=t.id;document.querySelectorAll('.task').forEach(r=>r.setAttribute('aria-selected',r.dataset.id===t.id));panel.innerHTML='';add(panel,[taskDetail(t,d)]);
@@ -748,8 +822,31 @@ function viewDay(d){const isToday=!d;if(isToday)d=currentDay();
  add(list,[sec('Must',mustOf(d)),sec('Stretch (optional)',stretchOf(d)),logCard(d)]);
  add(panel,[taskDetail(sel,d)]);
  add(wrap,[h('div',{class:'split'},list,panel)]);return wrap}
-function restDayView(d){return h('div',{class:'wrap'},h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:fmtD(d.date)}),h('h1',{text:d.title}),h('p',{text:d.note||''}))),
- h('div',{class:'card donecard'},h('div',{class:'big'},ic('coffee','lg')),h('h2',{text:d.type==='off'?'No DA tasks':'Rest day'}),h('p',{class:'muted',text:'Your streak does not break on these days.'}),h('a',{class:'btn',href:'#/plan'},'View plan')))}
+function doneOn(dt){const out=[];IX.study.forEach(d=>d.tasks.forEach(t=>{if(doneDate(t)===dt)out.push({t,d})}));return out}
+function restDayView(d){return offDayView(d.date)}
+function offDayView(dt){const inf=offInfo(dt)||{kind:'rest',title:'No study scheduled',note:''};const nx=currentDay();const t=todayISO();
+ return h('div',{class:'wrap'},h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(dt===t?'Today · ':'')+fmtD(dt)}),h('h1',{text:inf.title}),h('p',{text:inf.note}))),
+  h('div',{class:'card donecard offcard popin'},h('div',{class:'big officon'},ic('coffee','lg'),h('span',{class:'steam'},h('i'),h('i'),h('i'))),
+   h('h2',{text:inf.kind==='user'?'Enjoy the break':inf.kind==='fixed'?'No DA tasks today':'Rest day'}),
+   h('p',{class:'muted',text:'Your streak is safe today.'+(nx?' Next: Day '+nx.n+' · '+nx.title+' on '+fmtD(nx.date)+'.':'')}),
+   (()=>{const dn=doneOn(dt);if(!dn.length)return null;return h('div',{class:'donetoday slidein'},h('div',{class:'glab',text:(dt===t?'Done today':'Done on '+fmtD(dt))+' · '+plural(dn.length,'task')+' · '+fmtMin(dn.reduce((a,x)=>a+x.t.min,0))}),
+     h('ul',{},dn.map(x=>h('li',{},ic('check','sm'),h('a',{href:'#/day/'+x.d.id,text:'Day '+x.d.n+': '+x.t.t})))))})(),
+   h('div',{class:'row wrap',style:{justifyContent:'center',gap:'8px'}},
+    inf.kind==='user'?h('button',{class:'btn',onclick:()=>{setDayOff(dt,false);toast('Day off removed. The plan moved back.');rerender()}},ic('refresh','sm'),'Undo day off'):null,
+    nx&&dt===t?h('a',{class:'btn primary',href:'#/day/'+nx.id},'Work anyway: Day '+nx.n,ic('right','sm')):null,
+    h('a',{class:'btn ghost',href:'#/plan'},'View plan'))))}
+// Day off: today or a future date. Pending work from that date moves to the next study day.
+function dayOffDialog(dt,d){const t=todayISO();const isT=dt===t;const pend=isT?mustOf(d).filter(x=>!tDone(x)):mustOf(d);const mins=pend.reduce((a,x)=>a+x.min,0);
+ const pf0=projectedFinish();S.off=S.off||{};const keep=S.off[dt];S.off[dt]={on:true,t:0};const pf1=projectedFinish();if(keep)S.off[dt]=keep;else delete S.off[dt];computeSchedule();
+ let reason='';const reasons=['Health','Family','Travel','College','Other'];
+ modal(close=>{const chips=h('div',{class:'row wrap',style:{gap:'6px',margin:'6px 0 14px'}},reasons.map(r=>{const b=h('button',{class:'chip plain pick',onclick:()=>{reason=reason===r?'':r;chips.querySelectorAll('.pick').forEach(x=>x.classList.toggle('on',x.textContent===reason))}},r);return b}));
+  return h('div',{},h('div',{class:'officon small'},ic('coffee','lg')),h('h2',{text:isT?'Take today off?':'Day off on '+fmtD(dt)+'?'}),
+   h('p',{class:'muted',text:(isT?(pend.length?plural(pend.length,'remaining must task')+' (~'+fmtMin(mins)+') and':'')+' the rest of the plan move forward by one study day.':'Day '+d.n+' and everything after it move forward by one study day.')+' Finished tasks stay done and count for today. Your streak is protected.'}),
+   h('div',{class:'note small',style:{margin:'10px 0'}},'Projected finish: '+fmtDY(pf0)+' → '+fmtDY(pf1)),
+   h('div',{class:'tiny muted',text:'Reason (optional)'}),chips,
+   h('div',{class:'row',style:{justifyContent:'flex-end',gap:'8px'}},h('button',{class:'btn ghost',onclick:close},'Cancel'),
+    h('button',{class:'btn primary',onclick:()=>{close();const sp=$('.split');const go=()=>{setDayOff(dt,true,reason);toast(isT?'Day off saved. See you on '+fmtD(nextStudyDate(addDays(t,1)))+'.':'Day off planned for '+fmtD(dt)+'.');location.hash=isT?'#/today':location.hash;rerender()};
+     if(sp&&isT&&!matchMedia('(prefers-reduced-motion: reduce)').matches){sp.classList.add('leaving');setTimeout(go,380)}else go()}},ic('coffee','sm'),isT?'Take the day off':'Plan day off')))})}
 function taskMeta(t){const m=[chip(t.comp)];const pr=taskProgress(t);
  if(pr){m.push(h('span',{class:'chip plain'},ic('target','sm'),pr.n?pr.ok+'/'+pr.n+' solved':'',pr.quiz?(pr.n?' · ':'')+(pr.qd?'quiz done':'quiz'):''))}
  if(t.proof)m.push(h('span',{class:'chip '+(S.tasks[t.id]&&S.tasks[t.id].proof?'ok':'plain')},ic('link','sm'),'proof'));
@@ -762,7 +859,7 @@ function toggleTask(t,d){if(tDone(t)){setTaskDone(t,false);rerender();return}
 function taskRow(t,d,selected,select){const done=tDone(t);const pr=taskProgress(t);
  const ck=h('button',{class:'check'+(done?' on':pr&&pr.res&&!done?' part':''),'aria-label':(done?'Undo: ':'Mark done: ')+t.t,'aria-pressed':String(done),onclick:e=>{e.stopPropagation();toggleTask(t,d)}},ic('check','sm'));
  const row=h('div',{class:'task'+(done?' done':''),role:'button',tabindex:'0','data-id':t.id,'aria-selected':String(!!selected),onclick:()=>select(t),onkeydown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(t)}}},
-  ck,h('div',{},h('div',{class:'ttl',text:t.t}),h('div',{class:'meta'},taskMeta(t))),h('span',{class:'est'},ic(KIND_IC[t.kind]||'star','sm'),' ',t.est||fmtMin(t.min)));return row}
+  ck,h('div',{},h('div',{class:'ttl',text:t.t}),h('div',{class:'meta'},taskMeta(t),done&&doneDate(t)&&doneDate(t)!==d.date?h('span',{class:'chip ok'},ic('check','sm'),'Done '+fmtD(doneDate(t))):null)),h('span',{class:'est'},ic(KIND_IC[t.kind]||'star','sm'),' ',t.est||fmtMin(t.min)));return row}
 function taskGuide(g){return h('div',{class:'guide'},
  h('div',{class:'gsec'},h('div',{class:'glab',text:'What'}),h('p',{text:g.what}),g.items?h('ul',{},g.items.map(x=>h('li',{text:x}))):null),
  h('div',{class:'gsec'},h('div',{class:'glab',text:'Why'}),h('p',{text:g.why})),
@@ -801,19 +898,29 @@ function logCard(d){const l=S.logs[d.id]||{};const ta=h('textarea',{class:'input
  return h('section',{class:'card'},h('div',{class:'row between'},h('h3',{style:{margin:0}},'Daily log · Day '+d.n),st),h('p',{class:'tiny muted',style:{margin:'4px 0 8px'},text:'This log goes into the Drive backup so Claude can read it and help.'}),ta)}
 
 /* ---------- plan ---------- */
-function viewPlan(){const wrap=h('div',{class:'wrap'});const done=IX.study.filter(d=>dayStat(d).st==='done').length;const p=pace();const pf=projectedFinish();const cur=currentDay();
- add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Roadmap v2 · '+fmtDY(C.meta.start)+' to '+fmtDY(C.meta.end)}),h('h1',{text:'Plan'}),h('p',{text:done+' of '+IX.study.length+' days complete · projected finish '+fmtDY(pf)+(p.diff?(' ('+(p.diff<0?(-p.diff)+' behind':p.diff+' ahead')+')'):'')})),
-  cur?h('a',{class:'btn primary',href:'#/today'},'Today: Day '+cur.n):null)]);
+function viewPlan(){computeSchedule();const wrap=h('div',{class:'wrap'});const done=IX.study.filter(d=>dayStat(d).st==='done').length;const p=pace();const pf=projectedFinish();const cur=currentDay();const t=todayISO();
+ const offs=Object.keys(S.off||{}).filter(isUserOff).sort();const upOff=offs.filter(x=>x>=t);
+ const paceTxt=p.finished?'Journey complete':(p.diff<0?plural(-p.diff,'study day')+' behind the target ('+fmtDY(p.target)+')':p.diff>0?plural(p.diff,'study day')+' ahead of the target ('+fmtDY(p.target)+')':'On track for the target ('+fmtDY(p.target)+')');
+ add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Roadmap v3 · started '+fmtDY(C.meta.start)}),h('h1',{text:'Plan'}),h('p',{text:done+' of '+IX.study.length+' days complete · projected finish '+fmtDY(pf)})),
+  cur?h('a',{class:'btn primary',href:'#/today'},'Today: Day '+(SCHED.todayDay?SCHED.todayDay.n:cur.n)):null)]);
  add(wrap,[h('div',{class:'card',style:{marginBottom:'20px'}},h('div',{class:'row between'},h('b',{text:'Overall'}),h('span',{class:'est',text:Math.round(done/IX.study.length*100)+'%'})),h('div',{class:'bar',style:{marginTop:'8px'}},h('i',{style:{width:(done/IX.study.length*100)+'%'}})),
-  h('p',{class:'tiny muted',style:{margin:'8px 0 0'},text:'The plan is task-based: an unfinished day stays as Today. Dates are only a reference. Sunday rest; 7-8 Dec Milestone 3.'}))]);
- C.meta.blocks.forEach(b=>{const days=C.days.filter(d=>d.block===b.id);const sd=days.filter(d=>d.type==='study');const bd=sd.filter(d=>dayStat(d).st==='done').length;
-  add(wrap,[h('section',{class:'block'},h('div',{class:'blockhead'},h('div',{},h('h2',{style:{margin:0},text:b.title}),h('div',{class:'small muted',text:b.dates+' · '+sd.length+' study days'})),
+  h('p',{class:'small',style:{margin:'10px 0 0'},text:paceTxt}),
+  h('p',{class:'tiny muted',style:{margin:'6px 0 0'},text:'Dates move with you: an unfinished day stays as Today, a day off pushes the rest by one study day, and starting the next day early pulls it into today. Sundays are rest days; 7-8 Dec is Milestone 3.'}),
+  upOff.length?h('div',{class:'row wrap',style:{gap:'6px',marginTop:'10px'}},h('span',{class:'tiny muted',text:'Planned days off:'}),upOff.map(x=>h('button',{class:'chip plain offchip',title:'Remove this day off',onclick:()=>confirmBox('Remove day off on '+fmtD(x)+'?','The plan moves back by one study day.','Remove',()=>{setDayOff(x,false);rerender()})},ic('coffee','sm'),fmtD(x),ic('x','sm')))):null)]);
+ C.meta.blocks.forEach(b=>{const sd=IX.study.filter(d=>d.block===b.id);if(!sd.length)return;const bd=sd.filter(d=>dayStat(d).st==='done').length;
+  const ds=sd.map(d=>d.date).sort();const a=ds[0],z=ds[ds.length-1];const tiles=sd.map(d=>({dt:d.date,n:d.n,el:()=>dayTile(d,cur)}));
+  for(let x=addDays(a,1);x<z;x=addDays(x,1)){if(isOffDate(x)&&!sd.some(d=>d.date===x))tiles.push({dt:x,n:0,el:()=>offTile(x)})}
+  tiles.sort((u,v)=>u.dt<v.dt?-1:u.dt>v.dt?1:u.n-v.n);
+  add(wrap,[h('section',{class:'block'},h('div',{class:'blockhead'},h('div',{},h('h2',{style:{margin:0},text:b.title}),h('div',{class:'small muted',text:fmtD(a).slice(4)+' - '+fmtD(z).slice(4)+' · '+sd.length+' study days'})),
    h('div',{style:{minWidth:'180px'}},h('div',{class:'row between small'},h('span',{class:'muted',text:bd+'/'+sd.length}),h('b',{text:Math.round(bd/sd.length*100)+'%'})),h('div',{class:'bar'},h('i',{style:{width:(bd/sd.length*100)+'%'}})))),
-   h('div',{class:'days'},days.map(d=>dayTile(d,cur))))])});return wrap}
-function dayTile(d,cur){if(d.type!=='study')return h('div',{class:'dtile rest'},h('div',{class:'d'},h('span',{text:fmtD(d.date)})),h('div',{class:'t',text:d.title}));
- const st=dayStat(d);const isCur=cur&&cur.id===d.id;
- return h('a',{class:'dtile'+(st.st==='done'?' done':'')+(isCur?' cur':''),href:isCur?'#/today':'#/day/'+d.id,'aria-label':'Day '+d.n+': '+d.title+(st.st==='done'?', done':'')},
-  h('div',{class:'d'},h('span',{text:'Day '+d.n}),h('span',{text:fmtD(d.date).slice(4)})),h('div',{class:'t',text:d.title}),
+   h('div',{class:'days'},tiles.map(x=>x.el())))])});return wrap}
+function offTile(dt){const inf=offInfo(dt);const user=inf&&inf.kind==='user';
+ return h(user&&dt>=todayISO()?'button':'div',{class:'dtile rest'+(user?' useroff':''),title:user?'Day off (tap to remove)':inf.title,onclick:user&&dt>=todayISO()?()=>confirmBox('Remove day off on '+fmtD(dt)+'?','The plan moves back by one study day.','Remove',()=>{setDayOff(dt,false);rerender()}):null},
+  h('div',{class:'d'},h('span',{text:fmtD(dt)})),h('div',{class:'t'},user?ic('coffee','sm'):null,user?' Day off':inf.title),
+  (()=>{const n=doneOn(dt).length;return n?h('span',{class:'tiny',style:{fontWeight:600},text:plural(n,'task')+' done'}):null})())}
+function dayTile(d,cur){const st=dayStat(d);const t=todayISO();const isCur=SCHED.todayDay&&SCHED.todayDay.id===d.id;
+ return h('a',{class:'dtile'+(st.st==='done'?' done':'')+(isCur?' cur':''),href:isCur?'#/today':'#/day/'+d.id,'aria-label':'Day '+d.n+': '+d.title+(st.st==='done'?', done':', '+fmtD(d.date))},
+  h('div',{class:'d'},h('span',{text:'Day '+d.n}),h('span',{text:d.date===t?'Today':fmtD(d.date).slice(4)})),h('div',{class:'t',text:d.title}),
   st.st==='done'?h('span',{class:'chip ok',style:{alignSelf:'flex-start'}},ic('check','sm'),'Done'):h('div',{class:'bar'},h('i',{style:{width:(st.pct*100)+'%'}})))}
 
 /* ---------- post kit: material for a LinkedIn post since the previous post ---------- */
@@ -985,7 +1092,7 @@ function viewProject(id){const p=IX.project[id];if(!p)return h('p',{class:'empty
 function viewProgress(){const wrap=h('div',{class:'wrap'});const st=streakInfo(),x=xpInfo(),act=activity();const done=IX.study.filter(d=>dayStat(d).st==='done').length;
  const mins=Object.values(act).reduce((a,r)=>a+r.min,0);const pr=Object.values(S.prac);const solved=pr.filter(p=>p.ok).length,tried=pr.filter(p=>p.tries||p.ok||p.peeked).length;const firstTry=pr.filter(p=>p.ok&&!p.peeked&&(p.tries||1)<=1).length;
  const kpi=(v,l,s)=>h('div',{class:'card kpi'},h('b',{text:v}),h('span',{text:l}),s?h('div',{class:'tiny muted',style:{marginTop:'4px'},text:s}):null);
- add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Honest numbers'}),h('h1',{text:'Progress'}),h('p',{text:'Projected finish '+fmtDY(projectedFinish())+' (plan: '+fmtDY(C.meta.end)+')'})))]);
+ add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Honest numbers'}),h('h1',{text:'Progress'}),h('p',{text:'Projected finish '+fmtDY(projectedFinish())+' (target: '+fmtDY(C.meta.target||C.meta.end)+')'})))]);
  add(wrap,[h('div',{class:'grid g4'},kpi(done+' / '+IX.study.length,'days complete',Math.round(done/IX.study.length*100)+'% of plan'),kpi(fmtMin(mins),'study time logged','planned minutes of done tasks'),
   kpi(String(solved),'practice items solved',tried?Math.round(firstTry/Math.max(1,solved)*100)+'% first try, no peek':'not started'),(()=>{const k=kpi(st.cur+' / '+st.best,'streak / best',st.freezes?st.freezes+' freeze ready':'7 counted days = 1 freeze');k.querySelector('b').prepend(flame(26,!st.todayCounts),' ');return k})())]);
  // skills
@@ -994,7 +1101,7 @@ function viewProgress(){const wrap=h('div',{class:'wrap'});const st=streakInfo()
   const items=C.sets.filter(s=>s.subject===c).flatMap(s=>(s.problems||[]).concat(s.items||[]));const at=items.filter(p=>S.prac[p.id]&&(S.prac[p.id].tries||S.prac[p.id].ok)),ok=at.filter(p=>S.prac[p.id].ok);
   add(sk,[h('div',{class:'skill'},chip(c),h('div',{},h('div',{class:'bar'},h('i',{style:{width:(dn/tot*100)+'%',background:`var(${SUBJ[c][2]})`}})),items.length?h('div',{class:'tiny muted',style:{marginTop:'3px'},text:at.length?`accuracy ${Math.round(ok.length/at.length*100)}% (${ok.length}/${at.length})`:'practice pending'}):null),h('span',{class:'v',text:Math.round(dn/tot*100)+'%'}))])});
  // heatmap
- const hm=h('div',{class:'heat','aria-label':'Activity heatmap'});let d0=C.meta.start;while(parseISO(d0).getDay()!==1)d0=addDays(d0,-1);const end=addDays(C.meta.end,7);const t=todayISO();
+ const hm=h('div',{class:'heat','aria-label':'Activity heatmap'});let d0=C.meta.start;while(parseISO(d0).getDay()!==1)d0=addDays(d0,-1);const end=addDays(projectedFinish(),7);const t=todayISO();
  for(let d=d0;d<=end;d=addDays(d,1)){const r=act[d];const m=r?r.min:0;const lv=m>=240?4:m>=150?3:m>=90?2:m>0?1:0;add(hm,[h('i',{class:d>t?'fut':lv?'l'+lv:'',title:fmtD(d)+': '+(m?fmtMin(m):'no study')})])}
  add(wrap,[h('div',{class:'grid g2',style:{marginTop:'14px'}},sk,h('div',{class:'card'},h('h3',{text:'Level '+x.L+' · '+x.title}),h('div',{class:'bar',style:{margin:'8px 0'}},h('i',{style:{width:Math.round(x.pct*100)+'%'}})),h('p',{class:'small muted',text:x.xp+' XP · next level at '+x.next}),
   h('table',{class:'tbl'},h('tbody',{},[['Tasks',x.src.tasks],['Practice',x.src.practice],['Quizzes',x.src.quiz],['Projects + applications',x.src.extras]].map(([a,b])=>h('tr',{},h('td',{text:a}),h('td',{style:{textAlign:'right',fontWeight:700},text:String(b)}))))),
@@ -1002,11 +1109,11 @@ function viewProgress(){const wrap=h('div',{class:'wrap'});const st=streakInfo()
  add(wrap,[h('div',{class:'card chartbox',style:{marginTop:'14px'}},h('h3',{text:'Pace: planned vs actual days'}),paceChart())]);
  add(wrap,[h('div',{class:'card'},h('h3',{text:'Badges'}),h('div',{class:'badges'},BADGES.map(([id,n,dsc,i,fn])=>{let ok=false;try{ok=fn()}catch(e){}return h('div',{class:'badge'+(ok?'':' locked')},h('div',{class:'ic'},ok&&i==='flame'?flame(26):ic(ok?i:'lock')),h('b',{text:n}),h('span',{text:dsc}))})))]);
  return wrap}
-function paceChart(){const W=900,H=240,P={l:40,r:16,t:16,b:30};const s0=C.meta.start,s1=C.meta.end;const N=daysBetween(s0,s1)+1;const xs=d=>P.l+(daysBetween(s0,d)/(N-1))*(W-P.l-P.r);const ys=v=>H-P.b-(v/IX.study.length)*(H-P.t-P.b);
+function paceChart(){const W=900,H=240,P={l:40,r:16,t:16,b:30};computeSchedule();const s0=C.meta.start,s1=(SCHED.end>(C.meta.target||C.meta.end)?SCHED.end:(C.meta.target||C.meta.end));const N=daysBetween(s0,s1)+1;const xs=d=>P.l+(daysBetween(s0,d)/(N-1))*(W-P.l-P.r);const ys=v=>H-P.b-(v/IX.study.length)*(H-P.t-P.b);
  let plan='',c=0;for(let d=s0;d<=s1;d=addDays(d,1)){if(IX.date[d]&&IX.date[d].type==='study')c++;plan+=(plan?'L':'M')+xs(d).toFixed(1)+' '+ys(c).toFixed(1)}
  const comp={};IX.study.forEach(d=>{if(dayStat(d).st==='done'){let l=0;mustOf(d).forEach(t=>l=Math.max(l,S.tasks[t.id].done));const k=iso(new Date(l));comp[k]=(comp[k]||0)+1}});
  let act='',a=0;const t=todayISO();for(let d=s0;d<=s1&&d<=t;d=addDays(d,1)){a+=comp[d]||0;act+=(act?'L':'M')+xs(d).toFixed(1)+' '+ys(a).toFixed(1)}
- let grid='';[0,25,50,75,100,109].forEach(v=>{if(v>IX.study.length)return;grid+=`<line x1="${P.l}" x2="${W-P.r}" y1="${ys(v)}" y2="${ys(v)}" stroke="var(--border)"/><text x="${P.l-6}" y="${ys(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`});
+ let grid='';[0,25,50,75,100,125,IX.study.length].forEach(v=>{if(v>IX.study.length)return;grid+=`<line x1="${P.l}" x2="${W-P.r}" y1="${ys(v)}" y2="${ys(v)}" stroke="var(--border)"/><text x="${P.l-6}" y="${ys(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`});
  let mons='';for(let d=s0;d<=s1;d=addDays(d,1)){if(parseISO(d).getDate()===1||d===s0)mons+=`<text x="${xs(d)}" y="${H-10}" font-size="11" fill="var(--muted)">${MON[parseISO(d).getMonth()]}</text>`}
  const tx=t>=s0&&t<=s1?`<line x1="${xs(t)}" x2="${xs(t)}" y1="${P.t}" y2="${H-P.b}" stroke="var(--amber)" stroke-dasharray="4 4"/><text x="${xs(t)+4}" y="${P.t+10}" font-size="11" fill="var(--amber-text)">today</text>`:'';
  return h('div',{},h('div',{html:`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Planned versus completed study days over time">${grid}${mons}${tx}<path d="${plan}" fill="none" stroke="var(--border2)" stroke-width="2.5" stroke-dasharray="6 5"/>${act?`<path d="${act}" fill="none" stroke="var(--primary)" stroke-width="3"/>`:''}</svg>`}),
@@ -1038,7 +1145,7 @@ const APPST=['target','applied','screen','interview','offer','rejected'];
 function trackerView(){const box=h('div',{});const apps=Object.entries(S.kit.apps).filter(([,a])=>!a.del).sort((a,b)=>(b[1].applied||'').localeCompare(a[1].applied||''));
  const counts=APPST.map(s=>[s,apps.filter(([,a])=>a.status===s).length]);
  add(box,[h('div',{class:'row between wrap',style:{marginBottom:'14px'}},h('div',{class:'row wrap'},h('span',{class:'pill',text:apps.length+' total'}),counts.map(([s,n])=>h('span',{class:'pill',text:s+': '+n}))),h('button',{class:'btn primary',onclick:()=>appForm()},ic('plus','sm'),'Add application'))]);
- if(!apps.length){add(box,[h('div',{class:'card empty'},h('p',{text:'Applications start on Wed 3 Feb 2027 (Day 58) in the plan. You can use the tracker any time.'}))]);return box}
+ if(!apps.length){add(box,[h('div',{class:'card empty'},h('p',{text:(()=>{computeSchedule();const ak=IX.study.find(d=>d.tasks.some(x=>x.kind==='apply'));return ak?'Applications start on '+fmtD(ak.date)+' (Day '+ak.n+') in the plan. You can use the tracker any time.':'You can use the tracker any time.'})()}))]);return box}
  add(box,[h('div',{class:'tblwrap',style:{maxHeight:'none'}},h('table',{class:'tbl'},h('thead',{},h('tr',{},['Company','Role','Source','Applied','Status','Next step',''].map(x=>h('th',{text:x})))),
   h('tbody',{},apps.map(([id,a])=>h('tr',{},h('td',{},a.link?h('a',{href:a.link,target:'_blank',rel:'noopener',text:a.company||'(no name)'}):a.company||''),h('td',{text:a.role||''}),h('td',{text:a.source||''}),h('td',{text:a.applied?fmtD(a.applied):''}),
    h('td',{},h('span',{class:'chip '+(a.status==='offer'?'ok':a.status==='rejected'?'bad':a.status==='interview'||a.status==='screen'?'warn':'plain'),text:a.status||''})),h('td',{text:a.next?fmtD(a.next):''}),
@@ -1077,7 +1184,7 @@ async function boot(){loadState();applyTheme();
  document.body.innerHTML='<div class="loading"><div><div class="spin"></div>Loading DA Journey…</div></div>';
  await Drive.boot();
  try{const r=await fetch('content.json',{cache:'no-cache'});C=await r.json()}catch(e){try{const r=await fetch('content.json');C=await r.json()}catch(e2){document.body.innerHTML='<div class="loading">Content did not load. Check your internet connection and reload.</div>';return}}
- indexContent();lastLevel=xpInfo().L;if(!unlocked){lockView();return}shell();route(false);
+ indexContent();if(migrateIds())save();lastLevel=xpInfo().L;if(!unlocked){lockView();return}shell();route(false);
  if(Drive.conn())Drive.auto(true);
  if('serviceWorker' in navigator&&!DEV&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});}
 boot();
