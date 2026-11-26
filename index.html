@@ -274,7 +274,49 @@ details.mini summary{cursor:pointer;font-weight:650;font-size:.88rem;min-height:
 html[data-theme="dark"] .frz{color:#7dd3fc}
 .frz svg{animation:frzspin 6s linear infinite}
 @keyframes frzspin{to{transform:rotate(360deg)}}
-.check.on{animation:pop .28s ease-out}
+/* task tick (26 Nov): only the row just ticked animates */
+.check{position:relative;overflow:visible}
+.check.justdone{animation:tickpop .42s cubic-bezier(.2,1.6,.4,1)}
+.check.justdone svg path{stroke-dasharray:24;stroke-dashoffset:24;animation:draw .32s .08s ease-out forwards}
+.check .spark{position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px;border-radius:50%;background:var(--primary);opacity:0;pointer-events:none;animation:spark .55s ease-out forwards;transform:rotate(var(--a)) translateY(0)}
+.check .spark:nth-child(odd){background:var(--amber)}
+.check.justdone::after{content:'';position:absolute;inset:-3px;border-radius:10px;border:2px solid var(--primary);opacity:0;animation:ripple .5s ease-out}
+@keyframes tickpop{0%{transform:scale(.7)}55%{transform:scale(1.22)}100%{transform:scale(1)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes spark{0%{opacity:1;transform:rotate(var(--a)) translateY(0) scale(1)}100%{opacity:0;transform:rotate(var(--a)) translateY(-22px) scale(.4)}}
+@keyframes ripple{0%{opacity:.7;transform:scale(.85)}100%{opacity:0;transform:scale(1.6)}}
+.task.justdone{animation:rowflash .7s ease-out}
+.task.justdone .ttl{animation:strike .45s .1s ease-out both}
+@keyframes rowflash{0%{background:color-mix(in srgb,var(--primary) 14%,var(--surface))}100%{background:var(--surface)}}
+@keyframes strike{from{text-decoration-color:transparent;color:var(--text)}}
+/* work ahead + folded sections */
+.ahead .secthead h3{color:var(--primary-text)}
+.ahead .tasks .task{border-style:dashed}
+.secthead h3{display:flex;align-items:center;gap:6px}
+details.secfold{border:1px dashed var(--border2);border-radius:12px;padding:6px 10px 10px;background:var(--surface2,transparent)}
+details.secfold>summary{list-style:none;cursor:pointer}
+details.secfold>summary::-webkit-details-marker{display:none}
+details.secfold>summary .secthead{margin:4px 0}
+details.secfold>summary .secthead::after{content:'Show';font-size:.75rem;color:var(--muted);margin-left:8px}
+details.secfold[open]>summary .secthead::after{content:'Hide'}
+details.secfold[open]>.tasks{animation:slidein .25s ease-out}
+details.merged{border-color:var(--primary)}
+.daychip{font-weight:700}
+/* feedback motions */
+.shake{animation:shake .38s ease-in-out}
+@keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.pop2{animation:popin .3s cubic-bezier(.2,1.4,.4,1)}
+#topstreak.bump{animation:bump .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes bump{40%{transform:scale(1.35)}}
+.cele.out{animation:fadeout .22s ease-in forwards}
+@keyframes fadeout{to{opacity:0}}
+.lvlburst{position:relative;display:grid;place-items:center}
+.lvlburst::before{content:'';position:absolute;width:150px;height:150px;border-radius:50%;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,currentColor 30%,transparent) 0 10deg,transparent 10deg 30deg);animation:rays 6s linear infinite;z-index:-1;mask:radial-gradient(circle,#000 30%,transparent 70%);-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%)}
+@keyframes rays{to{transform:rotate(360deg)}}
+.k-level .cbox,.k-badge .cbox{animation:popin .45s cubic-bezier(.2,1.6,.4,1)}
+input.vol{width:130px;accent-color:var(--primary)}
+.sndbtn[aria-pressed="false"]{opacity:.65}
+@media (prefers-reduced-motion:reduce){.check.justdone,.check.justdone svg path,.check .spark,.check.justdone::after,.task.justdone,.task.justdone .ttl,.shake,.pop2,#topstreak.bump,.lvlburst::before{animation:none!important}.check.justdone svg path{stroke-dashoffset:0}.check .spark{display:none}}
 @keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
 .xpfloat{position:fixed;z-index:300;font-weight:800;color:var(--primary-text);pointer-events:none;animation:xpup .9s ease-out forwards;font-size:15px;text-shadow:0 1px 0 var(--bg)}
 @keyframes xpup{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-34px)}}
@@ -344,7 +386,7 @@ html[data-theme="dark"] .frz{color:#7dd3fc}
 <script>
 'use strict';
 /* ===== DA Journey v2 ===== */
-const APP_VER='2026.11.26-3';
+const APP_VER='2026.11.26-4';
 const CFG={
  CLIENT_ID:'331264298614-jr5f5ib5o7jkaqrbs3k7nla4gm7lsrv2.apps.googleusercontent.com', // set after the "DA Journey" Google Cloud project is created
  OWNER_H:'e3f2701c4914321da0c06ace2cb5fad3a3b71419d9da7f3de73f83a503bdaa1b', // SHA-256 of the owner's Google email (same owner as Hunter System)
@@ -389,7 +431,7 @@ function confirmBox(title,body,okLabel,onOk,danger){modal(close=>h('div',{},h('h
  h('button',{class:'btn '+(danger?'danger':'primary'),onclick:()=>{close();onOk()}},okLabel))))}
 
 /* ---------- icons (Lucide-style paths) ---------- */
-const IP={
+const IP={zap:'<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',vol:'<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',mute:'<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6M16 9l6 6"/>',
  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
  moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
  cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
@@ -442,12 +484,43 @@ function flame(size,dim){const id='fg'+(++flmN);const w=document.createElement('
 function freezeTag(n){if(!n)return null;const s=h('span',{class:'frz',title:n+' streak freeze ready'},ic('snow','sm'),String(n));return s}
 let lastPtr={x:0,y:0,t:0};addEventListener('pointerdown',e=>{lastPtr={x:e.clientX,y:e.clientY,t:Date.now()}},true);
 function floatXP(n){if(!n||n<=0||Date.now()-lastPtr.t>1500)return;const f=h('div',{class:'xpfloat',text:'+'+n+' XP',style:{left:lastPtr.x+'px',top:(lastPtr.y-18)+'px'}});document.body.appendChild(f);setTimeout(()=>f.remove(),950)}
-function celebrate(kind,title,sub){if(matchMedia('(prefers-reduced-motion: reduce)').matches){toast(title+(sub?' · '+sub:''));return}
+function celebrate(kind,title,sub,icon){if(document.querySelector('.cele')){setTimeout(()=>celebrate(kind,title,sub,icon),2900);return}Sfx.play(kind==='level'?'level':kind==='badge'?'badge':'day');if(reduceMotion()){toast(title+(sub?' · '+sub:''));return}
  const bg=h('div',{class:'cele',role:'status','aria-live':'polite'});const cols=['#059669','#f59e0b','#ea580c','#2563eb','#db2777','#7c3aed'];
  for(let i=0;i<34;i++)bg.appendChild(h('i',{class:'conf',style:{left:(Math.random()*100)+'%',background:cols[i%cols.length],animationDelay:(Math.random()*.5)+'s',animationDuration:(1.5+Math.random())+'s'}}));
- const big=h('div',{class:'big'});big.appendChild(kind==='level'?h('span',{style:{color:'var(--amber)'}},ic('trophy','xl')):flame(84));
+ const big=h('div',{class:'big'});big.appendChild(kind==='level'?h('span',{class:'lvlburst',style:{color:'var(--amber)'}},ic('trophy','xl')):kind==='badge'?h('span',{class:'lvlburst',style:{color:'var(--primary)'}},ic(icon||'star','xl')):flame(84));bg.classList.add('k-'+kind);
  bg.appendChild(h('div',{class:'cbox'},big,h('h2',{text:title}),sub?h('p',{class:'muted',style:{margin:0},text:sub}):null));
- const close=()=>bg.remove();bg.addEventListener('click',close);document.body.appendChild(bg);setTimeout(close,2600)}
+ const close=()=>{bg.classList.add('out');setTimeout(()=>bg.remove(),220)};bg.addEventListener('click',close);document.body.appendChild(bg);setTimeout(close,kind==='level'?3200:2600)}
+/* ---------- sound effects (26 Nov 2026) ----------
+ Synthesised with the Web Audio API: no audio files, nothing to download, works offline.
+ Short and soft by design (study tool). Off switch + volume in Settings and the speaker button in the top bar; per device. */
+const Sfx=(()=>{let ctx=null,master=null;
+ const on=()=>S.settings.sound!==false,vol=()=>S.settings.vol==null?0.6:S.settings.vol;
+ function ac(){if(!ctx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;ctx=new A();master=ctx.createGain();master.connect(ctx.destination)}
+  if(ctx.state==='suspended')ctx.resume();master.gain.value=0.35*vol();return ctx}
+ function tone(f,at,dur,o){o=o||{};const c=ctx,os=c.createOscillator(),g=c.createGain();os.type=o.type||'sine';os.frequency.setValueAtTime(f,at);
+  if(o.to)os.frequency.exponentialRampToValueAtTime(o.to,at+dur);const pk=o.gain||0.5;g.gain.setValueAtTime(0.0001,at);g.gain.exponentialRampToValueAtTime(pk,at+(o.att||0.008));
+  g.gain.exponentialRampToValueAtTime(0.0001,at+dur);os.connect(g);g.connect(o.dest||master);os.start(at);os.stop(at+dur+0.02)}
+ function noise(at,dur,o){o=o||{};const c=ctx,n=Math.floor(c.sampleRate*dur),b=c.createBuffer(1,n,c.sampleRate),dd=b.getChannelData(0);for(let i=0;i<n;i++)dd[i]=Math.random()*2-1;
+  const src=c.createBufferSource();src.buffer=b;const f=c.createBiquadFilter();f.type=o.ft||'bandpass';f.frequency.setValueAtTime(o.f||1200,at);if(o.f2)f.frequency.exponentialRampToValueAtTime(o.f2,at+dur);f.Q.value=o.q||0.8;
+  const g=c.createGain();g.gain.setValueAtTime(0.0001,at);g.gain.exponentialRampToValueAtTime(o.gain||0.25,at+0.04);g.gain.exponentialRampToValueAtTime(0.0001,at+dur);src.connect(f);f.connect(g);g.connect(master);src.start(at);src.stop(at+dur)}
+ const N={C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880,B5:987.77,C6:1046.5,E6:1318.5,G6:1568,C7:2093,G4:392,C4:261.63,E4:329.63,A4:440};
+ const P={
+  tick:t=>{tone(N.E5,t,0.09,{type:'triangle',gain:0.45});tone(N.C6,t+0.055,0.16,{type:'triangle',gain:0.4})},
+  untick:t=>{tone(N.C5,t,0.08,{type:'sine',gain:0.3,to:N.G4})},
+  tap:t=>{tone(N.A5,t,0.05,{type:'sine',gain:0.2})},
+  correct:t=>{tone(N.G5,t,0.1,{type:'triangle',gain:0.4});tone(N.C6,t+0.08,0.1,{type:'triangle',gain:0.4});tone(N.E6,t+0.16,0.22,{type:'triangle',gain:0.35})},
+  wrong:t=>{tone(196,t,0.14,{type:'square',gain:0.12});tone(165,t+0.12,0.2,{type:'square',gain:0.1})},
+  day:t=>{[N.C5,N.E5,N.G5,N.C6].forEach((f,i)=>tone(f,t+i*0.09,0.32,{type:'triangle',gain:0.38}));tone(N.E6,t+0.4,0.6,{type:'sine',gain:0.25});tone(N.G6,t+0.48,0.6,{type:'sine',gain:0.18});noise(t+0.36,0.5,{f:6000,q:2,gain:0.05})},
+  level:t=>{[N.G4,N.C5,N.E5,N.G5].forEach((f,i)=>tone(f,t+i*0.07,0.18,{type:'sawtooth',gain:0.12}));[N.C6,N.E6,N.G6].forEach(f=>tone(f,t+0.32,0.9,{type:'triangle',gain:0.22}));tone(N.C7,t+0.5,0.8,{type:'sine',gain:0.12});noise(t+0.3,0.8,{f:7000,q:3,gain:0.06})},
+  badge:t=>{[N.E6,N.G6,N.C7,N.G6,N.C7].forEach((f,i)=>tone(f,t+i*0.06,0.25,{type:'sine',gain:0.2}))},
+  streak:t=>{noise(t,0.35,{ft:'lowpass',f:600,f2:3000,gain:0.15});tone(N.A5,t+0.1,0.18,{type:'triangle',gain:0.3});tone(N.E6,t+0.2,0.3,{type:'triangle',gain:0.28})},
+  off:t=>{noise(t,0.6,{ft:'lowpass',f:2400,f2:300,gain:0.12});tone(N.E5,t+0.05,0.4,{type:'sine',gain:0.2,to:N.C5})},
+  move:t=>{tone(N.C5,t,0.12,{type:'sine',gain:0.25,to:N.G5});tone(N.C6,t+0.1,0.18,{type:'triangle',gain:0.25})}
+ };
+ return{play(k){if(!on())return;try{const c=ac();if(!c||!P[k])return;P[k](c.currentTime+0.01)}catch(e){}},
+  on,toggle(){S.settings.sound=!on();try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}if(on())this.play('tap');return on()},
+  setVol(v){S.settings.vol=v;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}}})();
+const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 function ic(name,cls){const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 24 24');s.setAttribute('class','i'+(cls?' '+cls:''));s.setAttribute('aria-hidden','true');s.innerHTML=IP[name]||'';return s}
 
 /* ---------- subjects ---------- */
@@ -482,29 +555,51 @@ function mergeState(o){if(!o||o.v!==1)return false;let ch=false;
  if(ch){S.updated=Math.max(S.updated,o.updated||0);try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}return ch}
 const now=()=>Date.now();
 // Task ids are content keys since 26 Nov 2026; C.idmap maps every older id to its new id so saved progress moves over.
-function migrateIds(){if(!C||!C.idmap)return false;let ch=false;
+// Daily logs are one per date since 26 Nov 2026 (merged days share one log). Older logs were keyed by day id.
+const isISO=k=>/^\d{4}-\d{2}-\d{2}$/.test(k);
+function migrateLogs(){let ch=false;for(const k of Object.keys(S.logs||{})){if(isISO(k))continue;const l=S.logs[k];delete S.logs[k];ch=true;if(!l||!l.text)continue;
+  const dt=iso(new Date(l.t||Date.now()));const x=S.logs[dt];S.logs[dt]=x&&x.text&&x.text!==l.text?{text:x.text+'\n'+l.text,t:Math.max(x.t||0,l.t||0)}:l}return ch}
+const logOf=dt=>S.logs[dt]||null,logDone=dt=>{const l=logOf(dt);return !!(l&&l.text&&l.text.trim().length>=20)};
+function migrateIds(){if(!C||!C.idmap)return migrateLogs();let ch=migrateLogs();
  for(const o in C.idmap){const x=S.tasks[o];if(!x)continue;const n=C.idmap[o];const y=S.tasks[n];if(!y||(x.t||0)>(y.t||0))S.tasks[n]=x;delete S.tasks[o];ch=true}
  return ch}
 
 /* ---------- plan logic ---------- */
 const tDone=t=>!!(S.tasks[t.id]&&S.tasks[t.id].done);
-function setTaskDone(t,v,extra){const x0=xpInfo().xp;const td0=computeSchedule().todayDay;const dd=IX.task[t.id]&&IX.task[t.id].d;const was=dd?dayStat(dd).st:'';
- const o=Object.assign({},S.tasks[t.id]||{},extra||{});o.done=v?(o.done||now()):0;o.t=now();if(v&&!o.date)o.date=todayISO();if(!v)delete o.date;S.tasks[t.id]=o;save();
- {const td1=computeSchedule().todayDay;if(v&&td1&&td0&&td1.id!==td0.id&&td1.sched==='pending')setTimeout(()=>toast('Day '+td1.n+' moved into today'),300)}
- if(v){floatXP(xpInfo().xp-x0);if(dd&&was!=='done'&&dayStat(dd).st==='done'){const st=streakInfo();setTimeout(()=>celebrate('day','Day '+dd.n+' complete!','Streak: '+plural(st.cur,'day')+' · Level '+xpInfo().L),350);lastLevel=xpInfo().L;return}}
+function setTaskDone(t,v,extra){const x0=xpInfo().xp;const sc0=computeSchedule();const td0=sc0.todayDay;const dd=IX.task[t.id]&&IX.task[t.id].d;const was=dd?(realDone(dd)?'done':'x'):'';
+ const ahead=!!(v&&dd&&td0&&dd.n>td0.n);const sk0=v?streakInfo().todayCounts:true;
+ const o=Object.assign({},S.tasks[t.id]||{},extra||{});o.done=v?(o.done||now()):0;o.t=now();if(v&&!o.date)o.date=todayISO();if(!v)delete o.date;S.tasks[t.id]=o;syncLogTasks();save();
+ const sc1=computeSchedule(),td1=sc1.todayDay;
+ if(v)Sfx.play('tick');
+ if(v&&dd&&was!=='done'&&realDone(dd)){floatXP(xpInfo().xp-x0);const st=streakInfo();const merged=dd.date===todayISO()&&td0&&dd.n>td0.n;
+  setTimeout(()=>celebrate('day','Day '+dd.n+' complete!',(merged?'Done today, so it moved into today and every later day moved up by one. ':'')+'Streak: '+plural(st.cur,'day')+' · Level '+xpInfo().L),350);lastLevel=xpInfo().L;return}
+ if(v){floatXP(xpInfo().xp-x0);
+  if(!sk0){const si=streakInfo();if(si.todayCounts)setTimeout(()=>{Sfx.play('streak');toast('Streak extended: '+plural(si.cur,'day'));const ts=document.getElementById('topstreak');if(ts){ts.classList.remove('bump');void ts.offsetWidth;ts.classList.add('bump')}},450)}
+  if(ahead)setTimeout(()=>{Sfx.play('move');toast('Done ahead: it now shows in Today. Day '+dd.n+' gets lighter.')},250);
+  else if(td1&&td0&&td1.id!==td0.id&&td1.sched==='pending')setTimeout(()=>toast('Day '+td1.n+' moved into today'),300)}
  checkLevelUp()}
-const mustOf=d=>d.tasks.filter(t=>t.must),stretchOf=d=>d.tasks.filter(t=>!t.must);
-function dayStat(d){if(d.type!=='study')return{st:d.type,done:0,total:0,pct:0};const m=mustOf(d);const dn=m.filter(tDone);
+// The daily log belongs to a date: one log ticks the log task of every day dated that day (the main day and days merged into it).
+// A log task ticked for a date the day no longer sits on (a merged day was reopened) is unticked.
+function syncLogTasks(){computeSchedule();for(const d of IX.study){const lt=d.tasks.find(x=>x.kind==='log');if(!lt)continue;const o=S.tasks[lt.id];
+  if(o&&o.done&&o.auto&&o.date===todayISO()&&d.date>todayISO()&&d.sched==='pending'){o.done=0;delete o.date;o.t=now();continue}
+  if(d.date&&d.date<=todayISO()&&logDone(d.date)&&!(o&&o.done)&&(d.sched==='done'||d.date===todayISO()))S.tasks[lt.id]=Object.assign({},o||{},{done:now(),date:d.date,auto:true,t:now()})}}
+const mustOf=d=>d.tasks.filter(t=>t.must),stretchOf=d=>d.tasks.filter(t=>!t.must),realMust=d=>d.tasks.filter(t=>t.must&&t.kind!=='log');
+const realDone=d=>realMust(d).every(tDone);
+const logTaskDone=(t,d)=>tDone(t)||(t.kind==='log'&&d&&d.date&&logDone(d.date));
+function dayStat(d){if(d.type!=='study')return{st:d.type,done:0,total:0,pct:0};const m=mustOf(d);const dn=m.filter(t=>logTaskDone(t,d));
  const dm=dn.reduce((a,t)=>a+t.min,0),tm=m.reduce((a,t)=>a+t.min,0);
  return{st:dn.length===m.length?'done':dn.length||d.tasks.some(tDone)?'part':'none',done:dm,total:tm,pct:tm?dm/tm:0,left:tm-dm,cnt:dn.length,n:m.length}}
-function currentDay(){for(const d of IX.study)if(dayStat(d).st!=='done')return d;return null}
+function currentDay(){for(const d of IX.study)if(!realDone(d))return d;return null}
 /* ---------- dynamic schedule (Prem, 26 Nov 2026) ----------
  Plan days have no fixed dates. The schedule is rebuilt from progress on every render:
  - a finished day keeps the date its last must task was done;
  - the first unfinished day goes to today, unless today is a day off Prem took, or today is a rest/fixed-off day
    and he has not worked today, or he already finished a day today and has not started the next one;
  - each later day takes the next available date (not Sunday, not a fixed off date, not a day off).
- So a day off pushes all pending work by one day, and starting the next day's tasks pulls that day into today.
+ So a day off pushes all pending work by one day.
+ Work ahead (26 Nov, Prem): a task of a later day ticked today shows in Today ("Done ahead today"); when all real must tasks of a
+ later day are done today (the daily log does not count, it belongs to the date), that day is dated today, shown merged into Today,
+ shares today's single log, and every later day moves up by one study day.
  Baseline dates from the content stay in d.base (used for the target and the planned line). */
 const isUserOff=dt=>!!(S.off&&S.off[dt]&&S.off[dt].on);
 const isFixedOff=dt=>!!(C.meta.fixedOff&&C.meta.fixedOff[dt]);
@@ -515,18 +610,19 @@ function offInfo(dt){if(isUserOff(dt))return{kind:'user',title:'Day off',note:(S
  if(isRestDow(dt))return{kind:'rest',title:'Rest day',note:'Sunday: rest. Optional study still counts.'};return null}
 function nextStudyDate(dt){let x=dt;for(let i=0;i<400&&isOffDate(x);i++)x=addDays(x,1);return x}
 function doneDate(t){const o=S.tasks[t.id];return o&&o.done?(o.date||iso(new Date(o.done))):null}
-function lastDoneDate(d){let l='';mustOf(d).forEach(x=>{const dd=doneDate(x);if(dd&&dd>l)l=dd});return l}
+function lastDoneDate(d){let l='';realMust(d).forEach(x=>{const dd=doneDate(x);if(dd&&dd>l)l=dd});return l}
 let SCHED={today:'',todayDay:null,doneToday:[],first:null,end:''};
 function computeSchedule(){const t=todayISO();const doneToday=[];let cursor=null,first=null;
  const touchedToday=d=>d.tasks.some(x=>doneDate(x)===t);
- for(const d of IX.study){const st=dayStat(d);
-  if(st.st==='done'){d.date=lastDoneDate(d)||d.base;d.sched='done';if(d.date===t)doneToday.push(d);continue}
+ for(const d of IX.study){
+  if(realDone(d)){d.date=lastDoneDate(d)||d.base;d.sched='done';if(d.date===t)doneToday.push(d);continue}
   if(cursor===null){first=d;
-   const canToday=!isUserOff(t)&&(touchedToday(d)||(!isOffDate(t)&&!doneToday.length));
+   // a later day is never pulled in by partial work once a day was finished today: its ticked tasks show as 'Done ahead' (Prem, 26 Nov)
+   const canToday=!isUserOff(t)&&!doneToday.length&&(touchedToday(d)||!isOffDate(t));
    cursor=canToday?t:nextStudyDate(addDays(t,1))}
   else cursor=nextStudyDate(addDays(cursor,1));
   d.date=cursor;d.sched='pending'}
- const todayDay=first&&first.date===t?first:(doneToday.length?doneToday[doneToday.length-1]:null);
+ const todayDay=first&&first.date===t?first:(doneToday.length?doneToday[0]:null);
  SCHED={today:t,todayDay,doneToday,first,end:IX.study.length?IX.study.reduce((m,d)=>d.date>m?d.date:m,''):t};return SCHED}
 function plannedDayFor(dateISO){let p=null;for(const d of IX.study){if(d.base<=dateISO)p=d;else break}return p}
 function studyDaysBetween(a,b){let n=0,x=a;while(x<b){x=addDays(x,1);if(!isRestDow(x)&&!isFixedOff(x))n++}return n}
@@ -577,7 +673,11 @@ function xpInfo(){let xp=0;const src={tasks:0,practice:0,quiz:0,extras:0};
  const base=75*(L-1)*L,next=75*L*(L+1);
  const title=L>=20?'Senior-ready':L>=15?'Analyst':L>=10?'Junior Analyst':L>=5?'Analyst in the making':'Trainee';
  return{xp,L,base,next,pct:(xp-base)/(next-base),title,src}}
-let lastLevel=null;function checkLevelUp(){const x=xpInfo();if(lastLevel&&x.L>lastLevel)celebrate('level','Level up! Level '+x.L,x.title);lastLevel=x.L}
+let lastLevel=null;function checkLevelUp(){const x=xpInfo();if(lastLevel&&x.L>lastLevel)celebrate('level','Level up! Level '+x.L,x.title);lastLevel=x.L;checkBadges()}
+// badges earned since last check get a celebration once per device (first run only records what is already earned)
+function checkBadges(){let seen=null;try{seen=JSON.parse(localStorage.getItem('daj-badges')||'null')}catch(e){}const got=BADGES.filter(b=>{try{return b[4]()}catch(e){return false}}).map(b=>b[0]);
+ if(seen){got.filter(id=>!seen.includes(id)).forEach(id=>{const b=BADGES.find(x=>x[0]===id);setTimeout(()=>celebrate('badge','Badge unlocked: '+b[1],b[2],b[3]),600)})}
+ try{localStorage.setItem('daj-badges',JSON.stringify(got))}catch(e){}}
 function blockDone(bid){return IX.study.filter(d=>d.block===bid).every(d=>dayStat(d).st==='done')}
 function subjSolved(prefix,min){const sets=C.sets.filter(s=>s.id.startsWith(prefix)&&s.problems);return sets.length&&sets.every(s=>{const n=s.problems.length,ok=s.problems.filter(p=>S.prac[p.id]&&S.prac[p.id].ok).length;return ok/n>=min})}
 function proofCount(re){let n=0;for(const id in S.tasks){const o=S.tasks[id],x=IX.task[id];if(o.done&&o.proof&&x&&re.test(x.t.t))n++}return n}
@@ -745,12 +845,14 @@ mq.addEventListener&&mq.addEventListener('change',applyTheme);
 /* ---------- shell ---------- */
 const NAV=[['today','Today','sun'],['plan','Plan','cal'],['practice','Practice','code'],['progress','Progress','chart'],['kit','Career kit','brief'],['settings','Settings','sliders']];
 let ui={sel:{},dayLogT:null};
+function sndBtn(){const b=h('button',{class:'iconbtn sndbtn','aria-label':'Sound effects','aria-pressed':String(Sfx.on()),title:'Sound effects on/off'},ic(Sfx.on()?'vol':'mute'));
+ b.onclick=()=>{const on=Sfx.toggle();document.querySelectorAll('.sndbtn').forEach(x=>{x.innerHTML='';x.appendChild(ic(on?'vol':'mute'));x.setAttribute('aria-pressed',String(on))});toast(on?'Sound effects on':'Sound effects off')};return b}
 function shell(){document.body.innerHTML='';const side=h('aside',{class:'side','aria-label':'Main'},
   h('div',{class:'brand'},h('span',{class:'logo'},ic('logo')),h('div',{},'DA Journey',h('small',{text:'Data Analyst prep · Prem'}))),
   h('nav',{class:'nav',id:'nav'},NAV.map(([k,l,i])=>h('a',{href:'#/'+k,'data-k':k},ic(i),l))),
-  h('div',{class:'mini',id:'sidemini'}));
+  h('div',{class:'mini',id:'sidemini'}),h('div',{class:'row',style:{padding:'4px 12px',gap:'6px',color:'var(--muted)',fontSize:'.8rem'}},sndBtn(),'Sound effects'));
  const top=h('header',{class:'topbar'},h('div',{class:'brand',style:{padding:0}},h('span',{class:'logo',style:{width:'30px',height:'30px'}},ic('logo')),'DA Journey'),
-  h('div',{class:'row'},h('span',{class:'pill',id:'topstreak'}),h('a',{class:'iconbtn',href:'#/settings','aria-label':'Settings'},ic('sliders'))));
+  h('div',{class:'row'},h('span',{class:'pill',id:'topstreak'}),sndBtn(),h('a',{class:'iconbtn',href:'#/settings','aria-label':'Settings'},ic('sliders'))));
  const tabs=h('nav',{class:'tabbar','aria-label':'Main'},NAV.slice(0,5).map(([k,l,i])=>h('a',{href:'#/'+k,'data-k':k},ic(i),l==='Career kit'?'Kit':l)));
  document.body.append(h('a',{class:'skip',href:'#view'},'Skip to content'),h('div',{class:'shell'},side,h('div',{},top,h('main',{class:'main',id:'view',tabindex:'-1'}))),tabs)}
 function updateNav(k){document.querySelectorAll('[data-k]').forEach(a=>a.getAttribute('data-k')===k?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'))}
@@ -783,7 +885,8 @@ function lockView(){document.body.innerHTML='';const msg=sessionStorage.getItem(
   msg?h('p',{class:'err',style:{marginTop:'12px'},text:msg}):null)))}
 
 /* ---------- day view (Today + any day) ---------- */
-function ringSVG(p,size){const r=46,c=2*Math.PI*r;return h('div',{html:`<svg viewBox="0 0 112 112" aria-hidden="true"><circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--surface3)" stroke-width="10"/><circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--primary)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-Math.min(1,p))}" style="transition:stroke-dashoffset .5s ease-out"/></svg>`}).firstChild}
+function ringSVG(p,size,from){const r=46,c=2*Math.PI*r;const f=from==null?p:from;const el=h('div',{html:`<svg viewBox="0 0 112 112" aria-hidden="true"><circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--surface3)" stroke-width="10"/><circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--primary)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-Math.min(1,f))}" style="transition:stroke-dashoffset .7s cubic-bezier(.3,1.2,.5,1)"/></svg>`}).firstChild;
+ if(f!==p)requestAnimationFrame(()=>requestAnimationFrame(()=>{const cc=el.querySelectorAll('circle')[1];if(cc)cc.setAttribute('stroke-dashoffset',String(c*(1-Math.min(1,p))))}));return el}
 function blockOf(d){return C.meta.blocks.find(b=>b.id===d.block)||{title:''}}
 function paceText(d){const t=todayISO();if(d.sched==='done')return'Completed '+(d.date===t?'today':fmtD(d.date));const dd=daysBetween(t,d.date);
  if(dd===0)return'Scheduled for today';return'Scheduled for '+fmtD(d.date)+(dd===1?' (tomorrow)':' (in '+dd+' days)')}
@@ -797,30 +900,42 @@ function viewDay(d){const isToday=!d;const t0=todayISO();
  let paceLine=paceText(d);if(isToday&&p.diff<0)paceLine+=' · '+plural(-p.diff,'day')+' behind the target';else if(isToday&&p.diff>0)paceLine+=' · '+plural(p.diff,'day')+' ahead of the target';
  const offBtn=(isToday&&d.sched==='pending'&&d.date===t)?h('button',{class:'btn sm ghost offbtn',onclick:()=>dayOffDialog(t,d)},ic('coffee','sm'),'Take today off'):
   (!isToday&&d.sched==='pending'&&d.date>t)?h('button',{class:'btn sm ghost offbtn',onclick:()=>dayOffDialog(d.date,d)},ic('coffee','sm'),'Day off on '+fmtD(d.date)):null;
- add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(isToday?'Today · ':'')+blockOf(d).title+' · Day '+d.n+' of '+IX.study.length}),h('h1',{text:d.title}),h('p',{text:paceLine})),
+ add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(isToday?'Today · ':'')+blockOf(d).title+' · Day '+(isToday&&SCHED.doneToday.filter(x=>x!==d).length?[d].concat(SCHED.doneToday.filter(x=>x!==d)).map(x=>x.n).sort((a,b)=>a-b).join(' + '):d.n)+' of '+IX.study.length}),h('h1',{text:d.title}),h('p',{text:paceLine})),
   h('div',{class:'row wrap'},offBtn,prev?h('a',{class:'btn sm',href:'#/day/'+prev.id,'aria-label':'Previous day'},ic('left','sm'),'Day '+prev.n):null,next?h('a',{class:'btn sm',href:'#/day/'+next.id,'aria-label':'Next day'},'Day '+next.n,ic('right','sm')):null))]);
  if(isToday){const ms=missedSince();if(ms.length&&!ui.missedHide)add(wrap,[h('div',{class:'note amber slidein',style:{marginBottom:'14px'}},ic('cal','sm'),' No study on '+ms.map(fmtD).join(', ')+' and no day off taken, so the plan moved forward by '+plural(ms.length,'day')+'. Next time tap "Take today off" to keep your streak safe. ',h('button',{class:'linkbtn',onclick:()=>{ui.missedHide=true;rerender()}},'Hide'))])}
  if(isToday&&isOffDate(t)&&d.sched==='pending')add(wrap,[h('div',{class:'note amber',style:{marginBottom:'14px'}},ic('coffee','sm'),' Today is a rest day. The work you do today still counts.')]);
- if(!isToday&&d.sched==='pending'&&currentDay()&&currentDay().id!==d.id)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Scheduled for '+fmtD(d.date)+'. If you start it today, it moves into today and the rest of the plan moves up. ',h('a',{href:'#/today'},'Go to Today'))]);
+ if(!isToday&&d.sched==='pending'&&currentDay()&&currentDay().id!==d.id)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Scheduled for '+fmtD(d.date)+'. Tasks you tick here today move to Today\'s list. Finish all its must tasks today and the whole day moves into today, and every later day moves up by one. ',h('a',{href:'#/today'},'Go to Today'))]);
  const st2=streakInfo(),x=xpInfo();
- add(wrap,[h('section',{class:'card hero','aria-label':'Day progress'},h('div',{class:'ring'+(st.pct>=1?' full':'')},ringSVG(st.pct),h('div',{class:'lbl'},h('b',{text:Math.round(st.pct*100)+'%'}),h('span',{text:'must done'}))),
+ add(wrap,[h('section',{class:'card hero','aria-label':'Day progress'},h('div',{class:'ring'+(st.pct>=1?' full':'')},ringSVG(st.pct,0,(ui.ring=ui.ring||{})[d.id]),(()=>{ui.ring[d.id]=st.pct;return null})(),h('div',{class:'lbl'},h('b',{text:Math.round(st.pct*100)+'%'}),h('span',{text:'must done'}))),
   h('div',{},h('h2',{style:{marginBottom:'6px'},text:st.st==='done'?'Day complete':st.cnt+' of '+st.n+' must tasks done'}),
    h('p',{class:'muted',style:{margin:0}},st.st==='done'?'Great. Stretch tasks are optional.':'~'+fmtMin(st.left)+' of must tasks left'+(stretchOf(d).length?' · stretch '+fmtMin(stretchOf(d).reduce((a,t)=>a+t.min,0)):''))),
   h('div',{class:'stats-mini'},h('div',{class:'streak'},flame(32,!st2.todayCounts),h('div',{},h('div',{class:'row',style:{gap:'8px'}},'Streak: '+plural(st2.cur,'day'),freezeTag(st2.freezes)),h('div',{class:'tiny',style:{fontWeight:500},text:st2.todayCounts?'Today counts':'90+ min of must tasks today extends your streak'}))),
    h('div',{class:'lvl'},h('div',{class:'row'},h('span',{text:'Level '+x.L+' · '+x.title}),h('span',{class:'muted',text:x.xp+' XP'})),h('div',{class:'bar',style:{marginTop:'6px'}},h('i',{style:{width:Math.round(x.pct*100)+'%'}})))))]);
  const list=h('div',{class:'stack'});
  if(st.st==='done'&&isToday===false&&currentDay()&&d.n<currentDay().n){}
- if(st.st==='done')add(list,[h('div',{class:'card donecard'},h('div',{class:'big'},ic('check','lg')),h('h2',{text:'Day '+d.n+' complete'}),h('p',{class:'muted',text:'Must tasks done. You can start the next day now, or do the stretch tasks.'}),
+ if(realDone(d))add(list,[h('div',{class:'card donecard popin'},h('div',{class:'big'},ic('check','lg')),h('h2',{text:'Day '+d.n+' complete'}),h('p',{class:'muted',text:'Must tasks done. You can start the next day now, or do the stretch tasks.'+(d.date&&d.date<=todayISO()&&!logDone(d.date)?' Last step: write the daily log below.':'')}),
   next&&next.sched==='pending'?h('a',{class:'btn primary',href:'#/day/'+next.id},'Continue with Day '+next.n,ic('right','sm')):null,
-  next&&next.sched==='pending'&&isToday?h('p',{class:'tiny muted',style:{marginTop:'8px'},text:'Day '+next.n+' is scheduled for '+fmtD(next.date)+'. Finishing any of its tasks today moves it into today.'}):null)]);
+  next&&next.sched==='pending'&&isToday?h('p',{class:'tiny muted',style:{marginTop:'8px'},text:'Day '+next.n+' is scheduled for '+fmtD(next.date)+'. Tasks you finish from it today show in Today; finish all of it and it moves into today.'}):null)]);
  const sel=ui.sel[d.id]&&IX.task[ui.sel[d.id]]?IX.task[ui.sel[d.id]].t:(mustOf(d).find(t=>!tDone(t))||d.tasks[0]);
  const panel=h('div',{class:'card detail sticky',id:'detail'});
- const select=t=>{ui.sel[d.id]=t.id;document.querySelectorAll('.task').forEach(r=>r.setAttribute('aria-selected',r.dataset.id===t.id));panel.innerHTML='';add(panel,[taskDetail(t,d)]);
+ const dayOfT=t=>(IX.task[t.id]&&IX.task[t.id].d)||d;
+ const select=t=>{ui.sel[d.id]=t.id;document.querySelectorAll('.task').forEach(r=>r.setAttribute('aria-selected',r.dataset.id===t.id));panel.innerHTML='';add(panel,[taskDetail(t,dayOfT(t))]);
   if(matchMedia('(max-width:1180px)').matches)panel.scrollIntoView({behavior:'smooth',block:'start'})};
- const sec=(title,arr,collapsible)=>{if(!arr.length)return null;const box=h('div',{class:'tasks'},arr.map(t=>taskRow(t,d,t===sel,select)));
-  const mins=arr.reduce((a,t)=>a+t.min,0);return h('section',{},h('div',{class:'secthead'},h('h3',{text:title}),h('span',{class:'est',text:arr.filter(tDone).length+'/'+arr.length+' · '+fmtMin(mins)})),box)};
- add(list,[sec('Must',mustOf(d)),sec('Stretch (optional)',stretchOf(d)),logCard(d)]);
- add(panel,[taskDetail(sel,d)]);
+ const sec=(title,arr,opt)=>{opt=opt||{};if(!arr.length)return null;const box=h('div',{class:'tasks'},arr.map(t=>taskRow(t,dayOfT(t),t===sel,select,opt.from)));
+  const mins=arr.reduce((a,t)=>a+t.min,0);const head=h('div',{class:'secthead'},h('h3',{},opt.icon?ic(opt.icon,'sm'):null,title),h('span',{class:'est',text:arr.filter(tDone).length+'/'+arr.length+' · '+fmtMin(mins)}));
+  if(opt.collapsed)return h('details',{class:'secfold'+(opt.cls?' '+opt.cls:'')},h('summary',{},head),opt.note?h('p',{class:'tiny muted',style:{margin:'0 0 8px'},text:opt.note}):null,box);
+  return h('section',{class:opt.cls||''},head,opt.note?h('p',{class:'tiny muted',style:{margin:'-4px 0 8px'},text:opt.note}):null,box)};
+ // Tasks done on an earlier date than the day's own date are grouped away so the list shows the work of that date (Prem, 26 Nov).
+ const earlier=d.sched==='pending'?d.tasks.filter(x=>tDone(x)&&x.kind!=='log'&&doneDate(x)<d.date):[];const notEarlier=x=>!earlier.includes(x);
+ add(list,[sec('Must',mustOf(d).filter(notEarlier)),sec('Stretch (optional)',stretchOf(d).filter(notEarlier))]);
+ if(isToday){
+  // work ahead: tasks of later, unfinished days ticked today show here; fully finished later days are merged into today
+  const ahead=doneOn(t).filter(x=>x.d.n>d.n&&!realDone(x.d)&&x.t.kind!=='log').map(x=>x.t);
+  add(list,[sec('Done ahead today',ahead,{icon:'zap',cls:'ahead slidein',from:true,note:'Ticked from later days. They count for today, and those days get lighter.'})]);
+  SCHED.doneToday.filter(x=>x!==d).forEach(m=>add(list,[sec('Also completed today: Day '+m.n+' · '+m.title,m.tasks.filter(x=>x.kind!=='log'&&tDone(x)),{icon:'check',collapsed:true,cls:'merged',from:true,note:'You finished this day today, so it moved into today and every later day moved up by one.'})]))}
+ add(list,[sec('Done earlier',earlier,{icon:'cal',collapsed:true,note:'Finished before '+fmtD(d.date)+'. They still count toward this day.'})]);
+ add(list,[logCard(isToday?t:d.date,isToday?[d].concat(SCHED.doneToday.filter(x=>x!==d)):[d])]);
+ add(panel,[taskDetail(sel,dayOfT(sel))]);
  add(wrap,[h('div',{class:'split'},list,panel)]);return wrap}
 function doneOn(dt){const out=[];IX.study.forEach(d=>d.tasks.forEach(t=>{if(doneDate(t)===dt)out.push({t,d})}));return out}
 function restDayView(d){return offDayView(d.date)}
@@ -845,21 +960,22 @@ function dayOffDialog(dt,d){const t=todayISO();const isT=dt===t;const pend=isT?m
    h('div',{class:'note small',style:{margin:'10px 0'}},'Projected finish: '+fmtDY(pf0)+' → '+fmtDY(pf1)),
    h('div',{class:'tiny muted',text:'Reason (optional)'}),chips,
    h('div',{class:'row',style:{justifyContent:'flex-end',gap:'8px'}},h('button',{class:'btn ghost',onclick:close},'Cancel'),
-    h('button',{class:'btn primary',onclick:()=>{close();const sp=$('.split');const go=()=>{setDayOff(dt,true,reason);toast(isT?'Day off saved. See you on '+fmtD(nextStudyDate(addDays(t,1)))+'.':'Day off planned for '+fmtD(dt)+'.');location.hash=isT?'#/today':location.hash;rerender()};
+    h('button',{class:'btn primary',onclick:()=>{close();const sp=$('.split');const go=()=>{setDayOff(dt,true,reason);Sfx.play('off');toast(isT?'Day off saved. See you on '+fmtD(nextStudyDate(addDays(t,1)))+'.':'Day off planned for '+fmtD(dt)+'.');location.hash=isT?'#/today':location.hash;rerender()};
      if(sp&&isT&&!matchMedia('(prefers-reduced-motion: reduce)').matches){sp.classList.add('leaving');setTimeout(go,380)}else go()}},ic('coffee','sm'),isT?'Take the day off':'Plan day off')))})}
 function taskMeta(t){const m=[chip(t.comp)];const pr=taskProgress(t);
  if(pr){m.push(h('span',{class:'chip plain'},ic('target','sm'),pr.n?pr.ok+'/'+pr.n+' solved':'',pr.quiz?(pr.n?' · ':'')+(pr.qd?'quiz done':'quiz'):''))}
  if(t.proof)m.push(h('span',{class:'chip '+(S.tasks[t.id]&&S.tasks[t.id].proof?'ok':'plain')},ic('link','sm'),'proof'));
  return m}
-function toggleTask(t,d){if(tDone(t)){setTaskDone(t,false);rerender();return}
+function toggleTask(t,d){if(tDone(t)){ui.justDone=null;setTaskDone(t,false);Sfx.play('untick');rerender();return}
  if(t.proof&&!(S.tasks[t.id]&&S.tasks[t.id].proof)){ui.sel[d.id]=t.id;ui.focusProof=true;rerender();toast('Add the proof link first (GitHub/LinkedIn URL)');return}
- const pr=taskProgress(t);if(pr&&!pr.complete){confirmBox('Practice is not finished',`${pr.res}/${pr.n} items resolved${pr.quiz&&!pr.qd?', quiz pending':''}. Mark done anyway? (Practice stats stay accurate.)`,'Mark done',()=>{setTaskDone(t,true,{manual:true});rerender()});return}
- if(t.kind==='log'){const l=S.logs[d.id];if(!l||l.text.trim().length<20){ui.sel[d.id]=t.id;rerender();setTimeout(()=>{const ta=$('#daylog');ta&&ta.focus()},50);toast('Write 2-3 lines in the daily log; the task ticks itself');return}}
- setTaskDone(t,true);rerender()}
-function taskRow(t,d,selected,select){const done=tDone(t);const pr=taskProgress(t);
- const ck=h('button',{class:'check'+(done?' on':pr&&pr.res&&!done?' part':''),'aria-label':(done?'Undo: ':'Mark done: ')+t.t,'aria-pressed':String(done),onclick:e=>{e.stopPropagation();toggleTask(t,d)}},ic('check','sm'));
- const row=h('div',{class:'task'+(done?' done':''),role:'button',tabindex:'0','data-id':t.id,'aria-selected':String(!!selected),onclick:()=>select(t),onkeydown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(t)}}},
-  ck,h('div',{},h('div',{class:'ttl',text:t.t}),h('div',{class:'meta'},taskMeta(t),done&&doneDate(t)&&doneDate(t)!==d.date?h('span',{class:'chip ok'},ic('check','sm'),'Done '+fmtD(doneDate(t))):null)),h('span',{class:'est'},ic(KIND_IC[t.kind]||'star','sm'),' ',t.est||fmtMin(t.min)));return row}
+ const pr=taskProgress(t);if(pr&&!pr.complete){confirmBox('Practice is not finished',`${pr.res}/${pr.n} items resolved${pr.quiz&&!pr.qd?', quiz pending':''}. Mark done anyway? (Practice stats stay accurate.)`,'Mark done',()=>{ui.justDone=t.id;setTaskDone(t,true,{manual:true});rerender()});return}
+ if(t.kind==='log'){if(!logDone(d.date||todayISO())){ui.sel[d.id]=t.id;rerender();setTimeout(()=>{const ta=$('#daylog');ta&&ta.focus()},50);toast('Write 2-3 lines in the daily log; the task ticks itself');return}}
+ ui.justDone=t.id;setTaskDone(t,true);rerender()}
+function taskRow(t,d,selected,select,from){const done=tDone(t);const pr=taskProgress(t);const jd=done&&ui.justDone===t.id;
+ const ck=h('button',{class:'check'+(done?' on':pr&&pr.res&&!done?' part':'')+(jd?' justdone':''),'aria-label':(done?'Undo: ':'Mark done: ')+t.t,'aria-pressed':String(done),onclick:e=>{e.stopPropagation();toggleTask(t,d)}},ic('check','sm'));
+ if(jd){for(let i=0;i<8;i++){const sp=h('i',{class:'spark'});sp.style.setProperty('--a',(i*45)+'deg');ck.appendChild(sp)}setTimeout(()=>{if(ui.justDone===t.id)ui.justDone=null},900)}
+ const row=h('div',{class:'task'+(done?' done':'')+(jd?' justdone':''),role:'button',tabindex:'0','data-id':t.id,'aria-selected':String(!!selected),onclick:()=>select(t),onkeydown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(t)}}},
+  ck,h('div',{},h('div',{class:'ttl',text:t.t}),h('div',{class:'meta'},from?h('span',{class:'chip plain daychip'},'Day '+d.n):null,taskMeta(t),!from&&done&&doneDate(t)&&doneDate(t)!==d.date?h('span',{class:'chip ok'},ic('check','sm'),'Done '+fmtD(doneDate(t))):null)),h('span',{class:'est'},ic(KIND_IC[t.kind]||'star','sm'),' ',t.est||fmtMin(t.min)));return row}
 function taskGuide(g){return h('div',{class:'guide'},
  h('div',{class:'gsec'},h('div',{class:'glab',text:'What'}),h('p',{text:g.what}),g.items?h('ul',{},g.items.map(x=>h('li',{text:x}))):null),
  h('div',{class:'gsec'},h('div',{class:'glab',text:'Why'}),h('p',{text:g.why})),
@@ -891,11 +1007,13 @@ function taskDetail(t,d){if(!t)return h('p',{class:'muted',text:'Choose a task.'
  add(box,[h('div',{class:'row wrap'},h('button',{class:'btn '+(done?'':'primary'),onclick:()=>toggleTask(t,d)},ic(done?'x':'check','sm'),done?'Undo done':'Mark done'),
   done&&o.done?h('span',{class:'tiny muted',text:'Done '+fmtD(o.date||iso(new Date(o.done)))+(o.auto?' (auto)':o.manual?' (manual)':'')}):null)]);
  return box}
-function logCard(d){const l=S.logs[d.id]||{};const ta=h('textarea',{class:'input',id:'daylog',rows:'4',placeholder:'2-5 lines: what you learned today, where you got stuck.'});ta.value=l.text||'';
- const st=h('span',{class:'tiny muted',text:l.t?'Saved '+fmtTime(l.t):''});
- ta.addEventListener('input',()=>{clearTimeout(ui.dayLogT);ui.dayLogT=setTimeout(()=>{S.logs[d.id]={text:ta.value,t:now()};const lt=d.tasks.find(x=>x.kind==='log');
-  if(lt&&ta.value.trim().length>=20&&!tDone(lt)){setTaskDone(lt,true,{auto:true});toast('Daily log task done');rerender();return}save();st.textContent='Saved '+fmtTime(now())},700)});
- return h('section',{class:'card'},h('div',{class:'row between'},h('h3',{style:{margin:0}},'Daily log · Day '+d.n),st),h('p',{class:'tiny muted',style:{margin:'4px 0 8px'},text:'This log goes into the Drive backup so Claude can read it and help.'}),ta)}
+function logCard(dt,days){const l=logOf(dt)||{};const ta=h('textarea',{class:'input',id:'daylog',rows:'4',placeholder:'2-5 lines: what you learned today, where you got stuck.'});ta.value=l.text||'';
+ const st=h('span',{class:'tiny muted',text:l.t?'Saved '+fmtTime(l.t):''});const fut=dt>todayISO();if(fut){ta.disabled=true;ta.placeholder='The log for '+fmtD(dt)+' opens on that day.'}
+ ta.addEventListener('input',()=>{clearTimeout(ui.dayLogT);ui.dayLogT=setTimeout(()=>{const before=JSON.stringify(days.map(x=>{const lt=x.tasks.find(y=>y.kind==='log');return lt?tDone(lt):1}));
+  S.logs[dt]={text:ta.value,t:now()};syncLogTasks();save();st.textContent='Saved '+fmtTime(now());
+  const after=JSON.stringify(days.map(x=>{const lt=x.tasks.find(y=>y.kind==='log');return lt?tDone(lt):1}));if(before!==after){Sfx.play('tick');toast('Daily log task done');rerender()}},700)});
+ const cover=days.length>1?'Covers Day '+days.map(x=>x.n).sort((a,b)=>a-b).join(' + ')+' (one log per date). ':'';
+ return h('section',{class:'card'},h('div',{class:'row between'},h('h3',{style:{margin:0}},'Daily log · '+(dt===todayISO()?'Today, ':'')+fmtD(dt)),st),h('p',{class:'tiny muted',style:{margin:'4px 0 8px'},text:cover+'This log goes into the Drive backup so Claude can read it and help.'}),ta)}
 
 /* ---------- plan ---------- */
 function viewPlan(){computeSchedule();const wrap=h('div',{class:'wrap'});const done=IX.study.filter(d=>dayStat(d).st==='done').length;const p=pace();const pf=projectedFinish();const cur=currentDay();const t=todayISO();
@@ -905,7 +1023,7 @@ function viewPlan(){computeSchedule();const wrap=h('div',{class:'wrap'});const d
   cur?h('a',{class:'btn primary',href:'#/today'},'Today: Day '+(SCHED.todayDay?SCHED.todayDay.n:cur.n)):null)]);
  add(wrap,[h('div',{class:'card',style:{marginBottom:'20px'}},h('div',{class:'row between'},h('b',{text:'Overall'}),h('span',{class:'est',text:Math.round(done/IX.study.length*100)+'%'})),h('div',{class:'bar',style:{marginTop:'8px'}},h('i',{style:{width:(done/IX.study.length*100)+'%'}})),
   h('p',{class:'small',style:{margin:'10px 0 0'},text:paceTxt}),
-  h('p',{class:'tiny muted',style:{margin:'6px 0 0'},text:'Dates move with you: an unfinished day stays as Today, a day off pushes the rest by one study day, and starting the next day early pulls it into today. Sundays are rest days; 7-8 Dec is Milestone 3.'}),
+  h('p',{class:'tiny muted',style:{margin:'6px 0 0'},text:'Dates move with you: an unfinished day stays as Today, a day off pushes the rest by one study day, tasks done ahead show in Today, and a later day finished today moves into today (the rest moves up). Sundays are rest days; 7-8 Dec is Milestone 3.'}),
   upOff.length?h('div',{class:'row wrap',style:{gap:'6px',marginTop:'10px'}},h('span',{class:'tiny muted',text:'Planned days off:'}),upOff.map(x=>h('button',{class:'chip plain offchip',title:'Remove this day off',onclick:()=>confirmBox('Remove day off on '+fmtD(x)+'?','The plan moves back by one study day.','Remove',()=>{setDayOff(x,false);rerender()})},ic('coffee','sm'),fmtD(x),ic('x','sm')))):null)]);
  C.meta.blocks.forEach(b=>{const sd=IX.study.filter(d=>d.block===b.id);if(!sd.length)return;const bd=sd.filter(d=>dayStat(d).st==='done').length;
   const ds=sd.map(d=>d.date).sort();const a=ds[0],z=ds[ds.length-1];const tiles=sd.map(d=>({dt:d.date,n:d.n,el:()=>dayTile(d,cur)}));
@@ -929,7 +1047,7 @@ function postWindow(t,d){const posts=IX.study.flatMap(x=>x.tasks.filter(y=>y.kin
 function postMaterial(t,d){const win=postWindow(t,d);const lines=[];const learned=[],built=[],proofs=[],logs=[];let solved=0,tried=0;const quizzes=[];
  win.forEach(x=>{x.tasks.forEach(y=>{if(!tDone(y)||y.id===t.id)return;const o=S.tasks[y.id];if(y.kind==='learn')learned.push(y.t);if(y.kind==='build'||y.kind==='github')built.push(y.t);if(o.proof)proofs.push(y.t+': '+o.proof);
    if(y.set){const pr=taskProgress(y);solved+=pr.ok;tried+=pr.n;const q=S.quiz[y.set];if(pr.quiz&&q)quizzes.push(IX.set[y.set].title+': '+q.best+'/'+q.total)}});
-  const l=S.logs[x.id];if(l&&l.text.trim())logs.push('Day '+x.n+': '+l.text.trim())});
+  });[...new Set(win.map(x=>x.date))].sort().forEach(dt=>{const l=logOf(dt);if(l&&l.text.trim())logs.push(fmtD(dt)+' (Day '+win.filter(x=>x.date===dt).map(x=>x.n).join('+')+'): '+l.text.trim())});
  const range=win.length?('Day '+win[0].n+' to Day '+win[win.length-1].n+' ('+fmtD(win[0].date)+' to '+fmtD(win[win.length-1].date)+')'):'';
  return{win,range,learned,built,proofs,logs,solved,tried,quizzes}}
 function postContextText(t,d){const m=postMaterial(t,d);const x=xpInfo(),st=streakInfo();
@@ -1011,7 +1129,7 @@ function problemView(s,p,i,onChange,onNext,isLast){const isSql=p.kind==='sql';co
   pr.then(r=>{busy(false);out.innerHTML='';if(!submit||!p.auto){showRes(r);return}
    let g;if(isSql)g=Grade.sql(p,r.sql);else if(r.timeout||(r.stderr&&!r.stdout))g={ok:false,msg:r.timeout?'Timed out.':'Your code raised an error: read the red message.'};else g=Grade.py(p,r.stdout);
    const prev=S.prac[p.id]||{};setPrac(p.id,{tries:(prev.tries||0)+1,ok:prev.ok||g.ok,code});save();checkLevelUp();
-   add(out,[h('div',{class:'verdict '+(g.ok?'ok':'bad')},ic(g.ok?'check':'x'),g.ok?'Correct!'+(g.note?' '+g.note:''):(g.msg||'The output does not match the expected output.'))]);showRes(r);
+   Sfx.play(g.ok?'correct':'wrong');add(out,[h('div',{class:'verdict '+(g.ok?'ok':'bad')+' pop2'},ic(g.ok?'check':'x'),g.ok?'Correct!'+(g.note?' '+g.note:''):(g.msg||'The output does not match the expected output.'))]);showRes(r);
    if(!isSql&&!g.ok&&r.stdout!=null&&!r.timeout)add(out,[diffBlock(p.ex,r.stdout)]);
    if(g.ok)add(out,[h('div',{class:'row',style:{marginTop:'10px'}},isLast?h('span',{class:'muted small',text:'Last problem in this set.'}):h('button',{class:'btn primary',onclick:onNext},'Next problem',ic('right','sm')))]);
    onChange()})}
@@ -1039,7 +1157,7 @@ function drillView(s){const box=h('div',{class:'stack'});const head=h('div',{});
  s.items.forEach((it,k)=>{const ps=S.prac[it.id]||{};const inp=h('input',{class:'input',inputmode:it.type==='num'?'decimal':'text',placeholder:it.type==='num'?'Number':'Answer','aria-label':'Answer '+(k+1),value:ps.ans||'',style:{maxWidth:'260px'}});
   const msg=h('div',{class:'small'});const fbox=h('div',{});
   const show=()=>{msg.innerHTML='';const p2=S.prac[it.id]||{};if(p2.ok)add(msg,[h('span',{class:'chip ok'},ic('check','sm'),'Correct'+(p2.peeked?' (after viewing the formula)':''))]);else if(p2.tries)add(msg,[h('span',{class:'chip bad'},ic('x','sm'),'Not correct yet ('+p2.tries+(p2.tries===1?' try)':' tries)'))])};
-  const check=()=>{const g=Grade.drill(it,inp.value);if(!g){toast('Enter your answer');return}if(g.msg){toast(g.msg);return}const p2=S.prac[it.id]||{};setPrac(it.id,{ans:inp.value,tries:(p2.tries||0)+1,ok:p2.ok||g.ok});save();checkLevelUp();show();drawHead();autoComplete(s.id)};
+  const check=()=>{const g=Grade.drill(it,inp.value);if(!g){toast('Enter your answer');return}if(g.msg){toast(g.msg);return}const p2=S.prac[it.id]||{};setPrac(it.id,{ans:inp.value,tries:(p2.tries||0)+1,ok:p2.ok||g.ok});save();Sfx.play(g.ok?'correct':'wrong');if(!g.ok){inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake')}checkLevelUp();show();drawHead();autoComplete(s.id)};
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')check()});
   const fb=h('button',{class:'btn ghost sm',onclick:()=>{const sh=()=>{fbox.innerHTML='';add(fbox,[h('pre',{class:'code',text:it.formula+(it.type==='num'?'\nAnswer: '+it.ans:'\nAnswer: '+it.ans)})])};if((S.prac[it.id]||{}).peeked||(S.prac[it.id]||{}).ok){sh();return}
    confirmBox('View the formula + answer?','This item will be marked "viewed" (amber). Try the hint first.','Show',()=>{setPrac(it.id,{peeked:true});save();sh();show();autoComplete(s.id)})}},ic('eye','sm'),'Formula');
@@ -1056,7 +1174,7 @@ function quizView(s){const qs=s.quiz;const st={i:0,score:0,ans:[]};const box=h('
   const opts=h('div',{});const why=h('div',{});const nextB=h('button',{class:'btn primary',hidden:true,onclick:()=>{st.i++;draw()}},st.i===qs.length-1?'Finish':'Next',ic('right','sm'));
   order.forEach((oi,k)=>{const b=h('button',{class:'opt',onclick:()=>{if(picked!=null)return;picked=oi;const ok=oi===q.a;if(ok)st.score++;st.ans.push(ok);
     opts.querySelectorAll('.opt').forEach(x=>{const o=+x.dataset.o;if(o===q.a)x.classList.add('right');else if(o===oi)x.classList.add('wrong');x.disabled=true});
-    add(why,[h('div',{class:'note '+(ok?'green':'amber'),style:{marginTop:'6px'}},h('b',{text:ok?'Correct! ':'Wrong. '}),q.why||'')]);nextB.hidden=false;nextB.focus()},'data-o':String(oi)},h('span',{class:'k',text:'ABCD'[k]}),h('code',{text:q.opts[oi]}));add(opts,[b])});
+    Sfx.play(ok?'correct':'wrong');add(why,[h('div',{class:'note '+(ok?'green':'amber'),style:{marginTop:'6px'}},h('b',{text:ok?'Correct! ':'Wrong. '}),q.why||'')]);nextB.hidden=false;nextB.focus()},'data-o':String(oi)},h('span',{class:'k',text:'ABCD'[k]}),h('code',{text:q.opts[oi]}));add(opts,[b])});
   add(box,[h('div',{class:'row between'},h('span',{class:'eyebrow',text:'Question '+(st.i+1)+' / '+qs.length}),h('span',{class:'est',text:st.score+' correct'})),h('div',{class:'bar',style:{margin:'8px 0 14px'}},h('i',{style:{width:(st.i/qs.length*100)+'%'}})),
    h('p',{style:{fontWeight:650,fontSize:'1.02rem'},text:q.q}),(q.show||q.code)?h('pre',{class:'code',text:q.show||q.code}):null,opts,why,h('div',{class:'row',style:{marginTop:'12px',justifyContent:'flex-end'}},nextB)])};
  const finish=()=>{const p=S.quiz[s.id]||{best:0,att:0};S.quiz[s.id]={best:Math.max(p.best||0,st.score),last:st.score,total:qs.length,att:(p.att||0)+1,t:now()};save();checkLevelUp();autoComplete(s.id);
@@ -1158,13 +1276,17 @@ function appForm(id){const a=id?Object.assign({},S.kit.apps[id]):{status:'applie
     h('div',{class:'row'},h('button',{class:'btn ghost',onclick:close},'Cancel'),h('button',{class:'btn primary',onclick:()=>{const o={};for(const k in f)o[k]=f[k].value.trim();if(!o.company){toast('Enter the company name');return}o.t=now();S.kit.apps[id||('a'+now().toString(36))]=o;save();close();rerender();toast('Saved')}},'Save'))))})}
 
 /* ---------- settings ---------- */
-function viewSettings(){const wrap=h('div',{class:'wrap'});add(wrap,[h('div',{class:'pagehead'},h('div',{},h('h1',{text:'Settings'}),h('p',{text:'Sync, backup, theme, Python runner.'})))]);
+function viewSettings(){const wrap=h('div',{class:'wrap'});add(wrap,[h('div',{class:'pagehead'},h('div',{},h('h1',{text:'Settings'}),h('p',{text:'Sync, backup, theme, sound, Python runner.'})))]);
  const em=Drive.email();const masked=em?em.replace(/^(.{2}).*(@.*)$/,'$1•••$2'):'';
  add(wrap,[h('div',{class:'grid g2'},
   h('div',{class:'card'},h('h3',{text:'Google Drive sync'}),h('p',{class:'small',id:'syncstat',text:Drive.status().t}),h('p',{class:'tiny muted',text:'Progress file "'+CFG.FILE+'" in the Drive folder "'+CFG.FOLDER+'". Auto-sync runs 4 s after every change. Claude can also read it through the Drive connector.'}),
    masked?h('p',{class:'tiny muted',text:'Signed in: '+masked}):null,
    h('div',{class:'row wrap'},Drive.conn()?h('button',{class:'btn primary',onclick:()=>{if(Drive.ok())Drive.sync(true);else Drive.signIn()}},ic('refresh','sm'),'Sync now'):h('button',{class:'btn primary',onclick:()=>Drive.signIn(),disabled:Drive.notReady()},ic('cloud','sm'),'Connect Drive'),
     Drive.conn()?h('a',{class:'btn',href:Drive.folderUrl(),target:'_blank',rel:'noopener'},ic('ext','sm'),'Open folder'):null,Drive.conn()?h('button',{class:'btn ghost',onclick:()=>{Drive.signOut();rerender()}},ic('logout','sm'),'Disconnect'):null)),
+  h('div',{class:'card'},h('h3',{text:'Sound effects'}),h('p',{class:'tiny muted',text:'Short sounds for ticks, correct answers, day complete, level up, badges and streaks. Saved on this device.'}),
+   h('div',{class:'row wrap'},(()=>{const b=h('button',{class:'btn'+(Sfx.on()?' primary':'')},ic(Sfx.on()?'vol':'mute','sm'),Sfx.on()?'On':'Off');b.onclick=()=>{Sfx.toggle();rerender()};return b})(),
+    (()=>{const r=h('input',{type:'range',min:'0',max:'1',step:'0.1',class:'vol','aria-label':'Volume'});r.value=String(S.settings.vol==null?0.6:S.settings.vol);r.addEventListener('change',()=>{Sfx.setVol(+r.value);Sfx.play('tick')});return r})(),
+    h('button',{class:'btn ghost sm',onclick:()=>{['tick','correct','day'].forEach((k,i)=>setTimeout(()=>Sfx.play(k),i*700))}},ic('play','sm'),'Test'))),
   h('div',{class:'card'},h('h3',{text:'Theme'}),h('div',{class:'row wrap'},[['system','System'],['light','Light'],['dark','Dark']].map(([v,l])=>h('button',{class:'btn'+((S.settings.theme||'system')===v?' primary':''),onclick:()=>{S.settings.theme=v;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}applyTheme();rerender()}},ic(v==='dark'?'moon':'sun','sm'),l)))),
   runnerCard(),
   h('div',{class:'card'},h('h3',{text:'Backup file'}),h('p',{class:'tiny muted',text:'Manual JSON backup in addition to Drive. Import merges (newer data wins) and deletes nothing.'}),
@@ -1184,7 +1306,7 @@ async function boot(){loadState();applyTheme();
  document.body.innerHTML='<div class="loading"><div><div class="spin"></div>Loading DA Journey…</div></div>';
  await Drive.boot();
  try{const r=await fetch('content.json',{cache:'no-cache'});C=await r.json()}catch(e){try{const r=await fetch('content.json');C=await r.json()}catch(e2){document.body.innerHTML='<div class="loading">Content did not load. Check your internet connection and reload.</div>';return}}
- indexContent();if(migrateIds())save();lastLevel=xpInfo().L;if(!unlocked){lockView();return}shell();route(false);
+ indexContent();if(migrateIds())save();try{checkBadges()}catch(e){}lastLevel=xpInfo().L;if(!unlocked){lockView();return}shell();route(false);
  if(Drive.conn())Drive.auto(true);
  if('serviceWorker' in navigator&&!DEV&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});}
 boot();
