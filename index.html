@@ -379,6 +379,33 @@ input.vol{width:130px;accent-color:var(--primary)}
 .donetoday ul{list-style:none;margin:0;padding:0}.donetoday li{display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:.9rem}
 .donetoday li svg{color:var(--primary);flex:none;margin-top:3px}.donetoday a{color:inherit;text-decoration:none}.donetoday a:hover{text-decoration:underline}
 
+/* streak freezes (26 Nov night) */
+.fslots{display:inline-flex;gap:4px;align-items:center}
+.fslot{width:22px;height:24px;display:inline-grid;place-items:center;border-radius:7px}
+.fslots.sm .fslot{width:16px;height:18px;border-radius:5px}
+.fslot:not(.on){border:1.5px dashed color-mix(in srgb,var(--muted) 60%,transparent);background:color-mix(in srgb,var(--surface3) 60%,transparent)}
+.fslot:not(.on) i{font-style:normal;font-size:.62rem;font-weight:800;color:var(--muted)}
+.fslots.sm .fslot:not(.on) i{font-size:.5rem}
+.fslot.on svg{width:100%;height:100%;filter:drop-shadow(0 1px 2px rgba(2,132,199,.35));animation:icebob 3s ease-in-out infinite}
+.fslot.on .ice{fill:#7dd3fc;stroke:#0284c7;stroke-width:1.3;stroke-linejoin:round}
+.fslot.on .ice2{fill:#0ea5e9}
+.fslot.on .ice3{stroke:#fff;stroke-width:1.4;stroke-linecap:round}
+.fslot.on:nth-child(2) svg{animation-delay:.4s}.fslot.on:nth-child(3) svg{animation-delay:.8s}
+@keyframes icebob{50%{transform:translateY(-1.5px)}}
+.flm.frozen{filter:drop-shadow(0 1px 3px rgba(14,165,233,.45))}
+.flm.frozen .fo,.flm.frozen .fi{animation:none}
+.flm.frozen svg{animation:frost 2.6s ease-in-out infinite}
+@keyframes frost{50%{filter:brightness(1.18)}}
+.streak.frozen{background:color-mix(in srgb,#0ea5e9 12%,var(--surface))!important;color:#0369a1}
+html[data-theme="dark"] .streak.frozen{color:#7dd3fc}
+.newsdlg{text-align:center;padding:6px 4px}
+.newsicon{display:grid;place-items:center;margin:4px auto 8px;min-height:84px}
+.newsicon.ice .fslots .fslot{width:44px;height:48px}
+.newsicon.broken .flm{transform:rotate(-12deg)}
+@media (prefers-reduced-motion:reduce){.fslot.on svg,.flm.frozen svg{animation:none!important}}
+.fslot.on{background:color-mix(in srgb,#0ea5e9 14%,transparent);border:1.5px solid #7dd3fc;padding:1px}
+html[data-theme="dark"] .fslot.on{border-color:#0369a1}
+
 </style>
 </head>
 <body>
@@ -386,7 +413,7 @@ input.vol{width:130px;accent-color:var(--primary)}
 <script>
 'use strict';
 /* ===== DA Journey v2 ===== */
-const APP_VER='2026.11.26-7';
+const APP_VER='2026.11.26-8';
 const CFG={
  CLIENT_ID:'331264298614-jr5f5ib5o7jkaqrbs3k7nla4gm7lsrv2.apps.googleusercontent.com', // set after the "DA Journey" Google Cloud project is created
  OWNER_H:'e3f2701c4914321da0c06ace2cb5fad3a3b71419d9da7f3de73f83a503bdaa1b', // SHA-256 of the owner's Google email (same owner as Hunter System)
@@ -479,9 +506,13 @@ const IP={zap:'<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',vol:'<path d="M11 5 
  logo:'<path d="M4 20V14M10 20V9M16 20V12M22 20V4" stroke-width="2.6"/><path d="M3 9l6-5 6 4 7-6" stroke-width="2"/>'
 };
 let flmN=0;
-function flame(size,dim){const id='fg'+(++flmN);const w=document.createElement('span');w.className='flm'+(dim?' dim':'');w.setAttribute('aria-hidden','true');
- w.innerHTML=`<svg viewBox="0 0 24 24" width="${size||20}" height="${size||20}"><defs><linearGradient id="${id}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#dc2626"/><stop offset=".55" stop-color="#ea580c"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs><path class="fo" fill="url(#${id})" d="M12 1.8c.9 3.4 5.6 5.6 5.6 11a5.6 5.6 0 0 1-11.2 0c0-2.3 1.1-4 2.3-5.1.4 1.7 1.4 2.8 2.6 2.8-.4-3 .1-6.2.7-8.7z"/><path class="fi" fill="#fde68a" d="M12 21.2a2.9 2.9 0 0 1-2.9-2.9c0-1.6 1.2-2.6 2-3.8.3 1 .9 1.6 1.6 1.6-.1-.9.2-2 .6-2.7 1 1.2 1.6 2.7 1.6 4.4a2.9 2.9 0 0 1-2.9 3.4z"/></svg>`;return w}
-function freezeTag(n){if(!n)return null;const s=h('span',{class:'frz',title:n+' streak freeze ready'},ic('snow','sm'),String(n));return s}
+function flame(size,dim,frozen){const id='fg'+(++flmN);const w=document.createElement('span');w.className='flm'+(frozen?' frozen':dim?' dim':'');w.setAttribute('aria-hidden','true');
+ w.innerHTML=`<svg viewBox="0 0 24 24" width="${size||20}" height="${size||20}"><defs><linearGradient id="${id}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${frozen?'#0369a1':'#dc2626'}"/><stop offset=".55" stop-color="${frozen?'#0ea5e9':'#ea580c'}"/><stop offset="1" stop-color="${frozen?'#bae6fd':'#f59e0b'}"/></linearGradient></defs><path class="fo" fill="url(#${id})" d="M12 1.8c.9 3.4 5.6 5.6 5.6 11a5.6 5.6 0 0 1-11.2 0c0-2.3 1.1-4 2.3-5.1.4 1.7 1.4 2.8 2.6 2.8-.4-3 .1-6.2.7-8.7z"/><path class="fi" fill="#fde68a" d="M12 21.2a2.9 2.9 0 0 1-2.9-2.9c0-1.6 1.2-2.6 2-3.8.3 1 .9 1.6 1.6 1.6-.1-.9.2-2 .6-2.7 1 1.2 1.6 2.7 1.6 4.4a2.9 2.9 0 0 1-2.9 3.4z"/></svg>`;return w}
+function freezeTag(n){return freezeSlots(n,true)}
+const ICE='<svg viewBox="0 0 24 24" aria-hidden="true"><path class="ice" d="M7 3h7l5 5-2 11-5 3-5-3-2-9z"/><path class="ice2" d="M9 9a3 3 0 0 0 6 0c0 2-1.2 4.5-3 6-1.8-1.5-3-4-3-6z"/><path class="ice3" d="M8 5l2 0M17 9l1 1"/></svg>';
+// three freeze slots: filled ice for each ready freeze, a dashed empty shell for the rest
+function freezeSlots(n,small){const w=h('span',{class:'fslots'+(small?' sm':''),title:n+' of 3 streak freezes ready','aria-label':n+' of 3 streak freezes ready'});
+ for(let i=0;i<3;i++)w.appendChild(h('span',{class:'fslot'+(i<n?' on':''),html:i<n?ICE:'<i>'+(i+1)+'</i>'}));return w}
 let lastPtr={x:0,y:0,t:0};addEventListener('pointerdown',e=>{lastPtr={x:e.clientX,y:e.clientY,t:Date.now()}},true);
 function floatXP(n){if(!n||n<=0||Date.now()-lastPtr.t>1500)return;const f=h('div',{class:'xpfloat',text:'+'+n+' XP',style:{left:lastPtr.x+'px',top:(lastPtr.y-18)+'px'}});document.body.appendChild(f);setTimeout(()=>f.remove(),950)}
 function celebrate(kind,title,sub,icon){if(document.querySelector('.cele')){setTimeout(()=>celebrate(kind,title,sub,icon),2900);return}Sfx.play(kind==='level'?'level':kind==='badge'?'badge':'day');if(reduceMotion()){toast(title+(sub?' · '+sub:''));return}
@@ -513,6 +544,8 @@ const Sfx=(()=>{let ctx=null,master=null;
   day:t=>{[N.C5,N.E5,N.G5,N.C6].forEach((f,i)=>tone(f,t+i*0.09,0.32,{type:'triangle',gain:0.38}));tone(N.E6,t+0.4,0.6,{type:'sine',gain:0.25});tone(N.G6,t+0.48,0.6,{type:'sine',gain:0.18});noise(t+0.36,0.5,{f:6000,q:2,gain:0.05})},
   level:t=>{[N.G4,N.C5,N.E5,N.G5].forEach((f,i)=>tone(f,t+i*0.07,0.18,{type:'sawtooth',gain:0.12}));[N.C6,N.E6,N.G6].forEach(f=>tone(f,t+0.32,0.9,{type:'triangle',gain:0.22}));tone(N.C7,t+0.5,0.8,{type:'sine',gain:0.12});noise(t+0.3,0.8,{f:7000,q:3,gain:0.06})},
   badge:t=>{[N.E6,N.G6,N.C7,N.G6,N.C7].forEach((f,i)=>tone(f,t+i*0.06,0.25,{type:'sine',gain:0.2}))},
+  freeze:t=>{[N.E6,N.G6,N.C7,2637].forEach((f,i)=>tone(f,t+i*0.06,0.4,{type:'sine',gain:0.14}));noise(t,0.5,{ft:'highpass',f:5000,gain:0.05})},
+  sbreak:t=>{tone(N.E5,t,0.25,{type:'triangle',gain:0.3});tone(N.C5,t+0.22,0.3,{type:'triangle',gain:0.28});tone(N.A4,t+0.48,0.5,{type:'triangle',gain:0.26,to:392})},
   streak:t=>{noise(t,0.35,{ft:'lowpass',f:600,f2:3000,gain:0.15});tone(N.A5,t+0.1,0.18,{type:'triangle',gain:0.3});tone(N.E6,t+0.2,0.3,{type:'triangle',gain:0.28})},
   off:t=>{noise(t,0.6,{ft:'lowpass',f:2400,f2:300,gain:0.12});tone(N.E5,t+0.05,0.4,{type:'sine',gain:0.2,to:N.C5})},
   move:t=>{tone(N.C5,t,0.12,{type:'sine',gain:0.25,to:N.G5});tone(N.C6,t+0.1,0.18,{type:'triangle',gain:0.25})}
@@ -520,6 +553,19 @@ const Sfx=(()=>{let ctx=null,master=null;
  return{play(k){if(!on())return;try{const c=ac();if(!c||!P[k])return;P[k](c.currentTime+0.01)}catch(e){}},
   on,toggle(){S.settings.sound=!on();try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}if(on())this.play('tap');return on()},
   setVol(v){S.settings.vol=v;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}}})();
+// shows unseen streak news one by one (freeze used, streak broken, freeze earned); waits if another dialog is open
+let newsBusy=false;function showStreakNews(){if(newsBusy||!C||!unlocked)return;if(document.querySelector('.modal-bg,.cele')){setTimeout(showStreakNews,1500);return}
+ const ev=streakEvents();if(!ev.length)return;newsBusy=true;const e=ev[0];const si=streakInfo();
+ Sfx.play(e.type==='break'?'sbreak':'freeze');
+ modal(close=>{const done=()=>{markStreakEvent(e);close();newsBusy=false;rerender();setTimeout(showStreakNews,350)};
+  const icon=e.type==='earned'?h('div',{class:'newsicon ice popin'},freezeSlots(Math.min(3,e.n))):e.type==='used'?h('div',{class:'newsicon popin'},flame(72,false,true)):h('div',{class:'newsicon broken popin'},flame(72,true));
+  const why=e.off?'day off':'no study';
+  const title=e.type==='earned'?'Streak freeze earned!':e.type==='used'?'Streak freeze used':'Streak broken';
+  const txt=e.type==='earned'?'All study days of the week ending '+fmtD(e.date)+' counted. You now have '+e.n+' of 3 freezes. A freeze covers one day off or missed day.'
+   :e.type==='used'?fmtD(e.date)+' ('+why+') used 1 streak freeze, so your '+e.len+'-day streak is safe. '+si.freezes+' of 3 freezes left. The flame stays frozen until you study 90+ min again.'
+   :fmtD(e.date)+' ('+why+') had no streak freeze ready, so your '+e.len+'-day streak ended. Start a new one today. Every Mon-Sat week with all study days counted earns a freeze (max 3).';
+  return h('div',{class:'newsdlg'},icon,h('h2',{text:title}),h('p',{class:'muted',text:txt}),e.type!=='earned'?h('div',{class:'row',style:{justifyContent:'center',gap:'6px',margin:'4px 0 12px'}},freezeSlots(si.freezes),h('span',{class:'tiny',text:si.freezes+' of 3'})):null,
+   h('div',{class:'row',style:{justifyContent:'center'}},h('button',{class:'btn primary',onclick:done},e.type==='break'?'Start again':'OK')))})}
 const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 function ic(name,cls){const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 24 24');s.setAttribute('class','i'+(cls?' '+cls:''));s.setAttribute('aria-hidden','true');s.innerHTML=IP[name]||'';return s}
 
@@ -699,14 +745,28 @@ function activity(){const a={};for(const id in S.tasks){const o=S.tasks[id];if(!
  const r=a[dt]||(a[dt]={min:0,tasks:0,daysDone:0});r.min+=x.t.min;r.tasks++}
  IX.study.forEach(d=>{const st=dayStat(d);if(st.st==='done'){let last=0;mustOf(d).forEach(t=>{last=Math.max(last,S.tasks[t.id].done)});const dt=iso(new Date(last));(a[dt]||(a[dt]={min:0,tasks:0,daysDone:0})).daysDone++}});return a}
 const restDates=()=>({has:dt=>isOffDate(dt)});
-function streakInfo(){const a=activity();const dates=Object.keys(a).sort();const t=todayISO();
- if(!dates.length)return{cur:0,best:0,freezes:0,usedFreeze:[]};
- let d=dates[0],cur=0,best=0,earned=0,fr=0,used=[];const counts=x=>a[x]&&(a[x].min>=90||a[x].daysDone>0);
- while(d<=t){const sun=parseISO(d).getDay()===0;const skip=sun||restDates().has(d);
-  if(counts(d)){cur++;earned++;if(earned%7===0)fr=Math.min(2,fr+1)}
-  else if(!skip&&d!==t){if(fr>0){fr--;used.push(d)}else cur=0}
+/* Streak rules (Prem, 26 Nov 2026 night):
+ - a date counts with 90+ min of finished tasks (or a finished day). Sundays and fixed off days (7-8 Dec) are neutral; work on them still counts;
+ - any other study date that does not count (day off, missed day, too little work) uses a streak freeze if one is ready, otherwise the streak breaks;
+ - each Mon-Sat week fully inside the journey in which all study days counted earns 1 freeze (max 3);
+ - today is judged when it is over, except a day off taken for today (judged at once);
+ - after a freeze is used the flame shows frozen until the next counted day. */
+function streakInfo(){const a=activity();const t=todayISO();const counts=x=>!!(a[x]&&(a[x].min>=90||a[x].daysDone>0));
+ const st=C.meta.start;const ds=Object.keys(a).sort();let d=ds.length&&ds[0]<st?ds[0]:st;
+ let cur=0,best=0,fr=0,used=[],breaks=[],earned=[],weekOK=true,frozen=null;
+ while(d<=t){const dow=parseISO(d).getDay();if(dow===1)weekOK=true;const neutral=(isRestDow(d)||isFixedOff(d))&&!isUserOff(d);const judge=d<t||isUserOff(d);
+  if(counts(d)){cur++;frozen=null}
+  else if(!neutral&&judge){weekOK=false;if(fr>0){fr--;used.push({date:d,off:isUserOff(d),len:cur});frozen=d}else{if(cur>0)breaks.push({date:d,len:cur,off:isUserOff(d)});cur=0;frozen=null}}
+    if(dow===6){const mon=addDays(d,-5);if(mon>=st&&weekOK&&(d<t||counts(d))){if(fr<3){fr++;earned.push({date:d,n:fr})}}weekOK=false}
   best=Math.max(best,cur);d=addDays(d,1)}
- return{cur,best,freezes:fr,usedFreeze:used,todayCounts:!!counts(t)}}
+ return{cur,best,freezes:fr,usedFreeze:used.map(x=>x.date),used,breaks,earned,frozen:cur>0&&frozen?frozen:null,todayCounts:counts(t)}}
+// streak news shown once at the next open: freeze used, streak broken, freeze earned (remembered in kit.checks, so it syncs)
+function streakEvents(){const s=streakInfo(),t=todayISO(),from=addDays(t,-10),ev=[];
+ s.used.forEach(x=>{if(x.date>=from)ev.push({k:'used:'+x.date,type:'used',date:x.date,off:x.off,len:x.len})});
+ s.breaks.forEach(x=>{if(x.date>=from)ev.push({k:'break:'+x.date,type:'break',date:x.date,off:x.off,len:x.len})});
+ s.earned.forEach(x=>{if(x.date>=from)ev.push({k:'earned:'+x.date,type:'earned',date:x.date,n:x.n})});
+ return ev.filter(e=>!(S.kit.checks['sev:'+e.k]&&S.kit.checks['sev:'+e.k].v)).sort((p,q)=>p.date<q.date?-1:1)}
+function markStreakEvent(e){S.kit.checks['sev:'+e.k]={v:true,t:now()};save()}
 function xpInfo(){let xp=0;const src={tasks:0,practice:0,quiz:0,extras:0};
  for(const id in S.tasks){const o=S.tasks[id];if(!o.done)continue;const x=IX.task[id];if(!x)continue;let v=x.t.must?x.t.min:Math.round(x.t.min*1.2);if(x.t.proof&&o.proof)v+=20;if(x.t.kind==='log')v+=10;src.tasks+=v}
  for(const id in S.prac){const p=S.prac[id];if(p.ok){let v=10;if(!p.peeked&&(p.tries||1)<=1)v+=5;src.practice+=v}}
@@ -717,7 +777,7 @@ function xpInfo(){let xp=0;const src={tasks:0,practice:0,quiz:0,extras:0};
  const base=75*(L-1)*L,next=75*L*(L+1);
  const title=L>=20?'Senior-ready':L>=15?'Analyst':L>=10?'Junior Analyst':L>=5?'Analyst in the making':'Trainee';
  return{xp,L,base,next,pct:(xp-base)/(next-base),title,src}}
-let lastLevel=null;function checkLevelUp(){const x=xpInfo();if(lastLevel&&x.L>lastLevel)celebrate('level','Level up! Level '+x.L,x.title);lastLevel=x.L;checkBadges()}
+let lastLevel=null;function checkLevelUp(){const x=xpInfo();if(lastLevel&&x.L>lastLevel)celebrate('level','Level up! Level '+x.L,x.title);lastLevel=x.L;checkBadges();setTimeout(showStreakNews,1200)}
 // badges earned since last check get a celebration once per device (first run only records what is already earned)
 function checkBadges(){let seen=null;try{seen=JSON.parse(localStorage.getItem('daj-badges')||'null')}catch(e){}const got=BADGES.filter(b=>{try{return b[4]()}catch(e){return false}}).map(b=>b[0]);
  if(seen){got.filter(id=>!seen.includes(id)).forEach(id=>{const b=BADGES.find(x=>x[0]===id);setTimeout(()=>celebrate('badge','Badge unlocked: '+b[1],b[2],b[3]),600)})}
@@ -813,7 +873,7 @@ const Drive=(()=>{
 })();
 function summary(){const st=streakInfo(),x=xpInfo(),p=pace();const cur=currentDay();const T=SCHED.todaySlot,nf=SCHED.slots.find(z=>z.kind==='future');const CS=T||nf;const offs=Object.keys(S.off||{}).filter(isUserOff).sort();
  return{currentDay:cur&&CS?CS.n:'finished',currentDayTitle:CS&&CS.g?CS.g.title:'',plannedToday:p.planned?p.planned.n:0,behindDays:p.behind||0,aheadDays:p.ahead||0,
-  daysDone:SCHED.slots.filter(z=>z.kind==='past').length+(todayComplete()?1:0),totalDays:SCHED.slots.length,contentDaysDone:IX.study.filter(d=>realDone(d)).length,contentDaysTotal:IX.study.length,carryMin:SCHED.carryMin||0,xp:x.xp,level:x.L,streak:st.cur,bestStreak:st.best,
+  daysDone:SCHED.slots.filter(z=>z.kind==='past').length+(todayComplete()?1:0),totalDays:SCHED.slots.length,contentDaysDone:IX.study.filter(d=>realDone(d)).length,contentDaysTotal:IX.study.length,carryMin:SCHED.carryMin||0,xp:x.xp,level:x.L,streak:st.cur,bestStreak:st.best,streakFreezes:st.freezes,streakFrozen:!!st.frozen,
   solved:Object.values(S.prac).filter(q=>q.ok).length,applications:Object.values(S.kit.apps).filter(a=>!a.del&&a.status!=='target').length,targets:Object.values(S.kit.apps).filter(a=>!a.del&&a.status==='target').length,projected:projectedFinish(),target:C.meta.target||C.meta.end,scheduledToday:T?{day:T.n,title:T.g?T.g.title:'',status:T.off?'day off':todayComplete()?'done':'pending'}:null,daysOff:offs,daysOffCount:offs.length,postDigest:postDigest(),openFeedback:Object.values(S.fb||{}).filter(f=>f.status==='open').map(f=>({where:f.where,text:f.text,day:f.day,created:f.created}))}}
 // for Claude (reads this file via Google Drive): what to post about next
 function postDigest(){const cur=currentDay();const posts=IX.study.flatMap(x=>x.tasks.filter(y=>y.kind==='post').map(y=>({t:y,d:x})));
@@ -901,7 +961,7 @@ function shell(){document.body.innerHTML='';const side=h('aside',{class:'side','
  document.body.append(h('a',{class:'skip',href:'#view'},'Skip to content'),h('div',{class:'shell'},side,h('div',{},top,h('main',{class:'main',id:'view',tabindex:'-1'}))),tabs)}
 function updateNav(k){document.querySelectorAll('[data-k]').forEach(a=>a.getAttribute('data-k')===k?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'))}
 function updateSideMini(){const el=$('#sidemini');if(!el)return;const st=streakInfo(),x=xpInfo();el.innerHTML='';
- add(el,[h('div',{class:'minicard'},h('div',{class:'row'},h('span',{class:'row',style:{gap:'6px',color:'var(--amber-text)',fontWeight:700}},flame(20,!st.todayCounts),'Streak: '+plural(st.cur,'day')),freezeTag(st.freezes)),
+ add(el,[h('div',{class:'minicard'},h('div',{class:'row'},h('span',{class:'row',style:{gap:'6px',color:'var(--amber-text)',fontWeight:700}},flame(20,!st.todayCounts,!!st.frozen),'Streak: '+plural(st.cur,'day')),freezeSlots(st.freezes,true)),
   h('div',{class:'divider',style:{margin:'10px 0'}}),h('div',{class:'row'},h('b',{text:'Level '+x.L}),h('span',{class:'tiny muted',text:x.xp+' XP'})),h('div',{class:'tiny muted',style:{margin:'2px 0 6px'},text:x.title}),h('div',{class:'bar'},h('i',{style:{width:Math.round(x.pct*100)+'%'}}))),
   h('div',{class:'syncline',id:'syncline'})]);const ts=$('#topstreak');if(ts){ts.innerHTML='';add(ts,[flame(16,!st.todayCounts),String(st.cur)]);ts.style.color='var(--amber-text)'}updateSyncUI()}
 function updateSyncUI(){const el=$('#syncline');const s=Drive.status();if(el){el.innerHTML='';add(el,[ic(s.s==='err'?'x':'cloud','sm'),s.t])}const e2=$('#syncstat');if(e2)e2.textContent=s.t}
@@ -950,7 +1010,7 @@ function viewDay(sl){const t=todayISO();
  const hrefOf=x=>x.kind==='today'?'#/today':'#/day/'+x.n;
  add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(isToday?'Today · ':'')+(g?blockOf(g).title+' · ':'')+'Day '+sl.n+' of '+total}),h('h1',{text:g?g.title:'All planned content done'}),h('p',{text:paceLine})),
   h('div',{class:'row wrap'},offBtn,prev?h('a',{class:'btn sm',href:hrefOf(prev),'aria-label':'Previous day'},ic('left','sm'),'Day '+prev.n):null,next?h('a',{class:'btn sm',href:hrefOf(next),'aria-label':'Next day'},'Day '+next.n,ic('right','sm')):null))]);
- if(isToday){const ms=missedSince();if(ms.length&&!ui.missedHide)add(wrap,[h('div',{class:'note amber slidein',style:{marginBottom:'14px'}},ic('cal','sm'),' No study on '+ms.map(fmtD).join(', ')+' and no day off taken, so the plan moved forward by '+plural(ms.length,'day')+'. Were you unwell or busy? Mark it as a day off to keep your streak safe. ',
+ if(isToday){const ms=missedSince();if(ms.length&&!ui.missedHide)add(wrap,[h('div',{class:'note amber slidein',style:{marginBottom:'14px'}},ic('cal','sm'),' No study on '+ms.map(fmtD).join(', ')+' and no day off taken, so the plan moved forward by '+plural(ms.length,'day')+'. Were you unwell or busy? Mark it as a day off to record the reason. ',
   h('span',{class:'row wrap',style:{gap:'6px',marginTop:'6px'}},ms.filter(x=>x>=addDays(t,-2)).map(x=>h('button',{class:'btn sm ghost offbtn',onclick:()=>dayOffDialog(x,null)},ic('coffee','sm'),'Mark '+fmtD(x)+' as day off')),h('button',{class:'linkbtn',onclick:()=>{ui.missedHide=true;rerender()}},'OK')))])}
  if(isFut&&!SCHED.todaySlot)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Today is a rest day. A task you tick here counts as bonus work: it is done, and this day gets lighter. Finish all of this day\'s must tasks and the plan moves up by one day.')]);
  else if(isFut)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Scheduled for '+fmtD(sl.date)+'. A task you tick here is done today: it leaves this day and shows on Day '+(SCHED.todaySlot?SCHED.todaySlot.n:'')+' (today) under "Done ahead". Finish all of this day\'s must tasks today and the whole day moves into today, so every later day moves up one number. ',SCHED.todaySlot?h('a',{href:'#/today'},'Go to Today'):null)]);
@@ -961,7 +1021,7 @@ function viewDay(sl){const t=todayISO();
  const sub=isPast?(st.movedOut?plural(st.movedOut,'unfinished task')+' moved to later days.':'Everything planned for this day was finished.'):isFut?'~'+fmtMin(tm)+' of must work'+(st.earlierDone?' · '+plural(st.earlierDone,'task')+' already done ahead':''):complete?'Great. Stretch tasks are optional.':'~'+fmtMin(tm-dm)+' of must tasks left';
  add(wrap,[h('section',{class:'card hero','aria-label':'Day progress'},h('div',{class:'ring'+(pct>=1?' full':'')},ringSVG(pct,0,(ui.ring=ui.ring||{})[K]),(()=>{ui.ring[K]=pct;return null})(),h('div',{class:'lbl'},h('b',{text:Math.round(pct*100)+'%'}),h('span',{text:isPast?'worked':'must done'}))),
   h('div',{},h('h2',{style:{marginBottom:'6px'},text:head}),h('p',{class:'muted',style:{margin:0}},sub)),
-  h('div',{class:'stats-mini'},h('div',{class:'streak'},flame(32,!st2.todayCounts),h('div',{},h('div',{class:'row',style:{gap:'8px'}},'Streak: '+plural(st2.cur,'day'),freezeTag(st2.freezes)),h('div',{class:'tiny',style:{fontWeight:500},text:st2.todayCounts?'Today counts':'90+ min of must tasks today extends your streak'}))),
+  h('div',{class:'stats-mini'},h('div',{class:'streak'+(st2.frozen?' frozen':'')},flame(32,!st2.todayCounts,!!st2.frozen),h('div',{},h('div',{class:'row',style:{gap:'8px'}},'Streak: '+plural(st2.cur,'day')+(st2.frozen?' · frozen':'')),h('div',{class:'tiny',style:{fontWeight:500},text:st2.todayCounts?'Today counts':st2.frozen?'A freeze saved it. Study 90+ min today to continue.':'90+ min of must tasks today extends your streak'}),h('div',{class:'row',style:{gap:'6px',marginTop:'6px'}},freezeSlots(st2.freezes),h('span',{class:'tiny',style:{fontWeight:600},text:st2.freezes+' of 3 freezes'})))),
    h('div',{class:'lvl'},h('div',{class:'row'},h('span',{text:'Level '+x.L+' · '+x.title}),h('span',{class:'muted',text:x.xp+' XP'})),h('div',{class:'bar',style:{marginTop:'6px'}},h('i',{style:{width:Math.round(x.pct*100)+'%'}})))))]);
  const list=h('div',{class:'stack'});
  const nf=nextFutureSlot();
@@ -993,24 +1053,27 @@ function offDayView(dt){const inf=offInfo(dt)||{kind:'rest',title:'No study sche
  return h('div',{class:'wrap'},h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(dt===t?'Today · ':'')+fmtD(dt)}),h('h1',{text:inf.title}),h('p',{text:inf.note}))),
   h('div',{class:'card donecard offcard popin'},h('div',{class:'big officon'},ic('coffee','lg'),h('span',{class:'steam'},h('i'),h('i'),h('i'))),
    h('h2',{text:inf.kind==='user'?'Enjoy the break':inf.kind==='fixed'?'No DA tasks today':'Rest day'}),
-   h('p',{class:'muted',text:'Your streak is safe today.'+(nx?' Next: Day '+nx.n+' · '+nx.title+' on '+fmtD(nx.date)+'.':'')+(inf.kind!=='user'&&dt===t?' Feel like studying? Open Day '+(nx?nx.n:'')+' and tick tasks: they count as bonus, so that day gets lighter. Finish all of it and the plan moves up a day.':'')}),
+   h('p',{class:'muted',text:offStreakText(dt,inf)+(nx?' Next: Day '+nx.n+' · '+nx.title+' on '+fmtD(nx.date)+'.':'')+(inf.kind!=='user'&&dt===t?' Feel like studying? Open Day '+(nx?nx.n:'')+' and tick tasks: they count as bonus, so that day gets lighter. Finish all of it and the plan moves up a day.':'')}),
    (()=>{const dn=doneOn(dt);if(!dn.length)return null;return h('div',{class:'donetoday slidein'},h('div',{class:'glab',text:(dt===t?'Done today':'Done on '+fmtD(dt))+' · '+plural(dn.length,'task')+' · '+fmtMin(dn.reduce((a,x)=>a+x.t.min,0))}),
      h('ul',{},dn.map(x=>h('li',{},ic('check','sm'),x.t.t))))})(),
    h('div',{class:'row wrap',style:{justifyContent:'center',gap:'8px'}},
     inf.kind==='user'?h('button',{class:'btn',onclick:()=>{setDayOff(dt,false);toast('Day off removed. The plan moved back.');rerender()}},ic('refresh','sm'),'Undo day off'):null,
     nx&&dt===t?h('a',{class:'btn primary',href:'#/day/'+nx.id},'Work anyway: Day '+nx.n,ic('right','sm')):null,
     h('a',{class:'btn ghost',href:'#/plan'},'View plan'))))}
+function offStreakText(dt,inf){if(inf.kind!=='user')return'Rest day: no effect on your streak.';const si=streakInfo();
+ if(si.usedFreeze.includes(dt))return'A streak freeze covered today; your '+plural(si.cur,'day')+' streak is safe ('+si.freezes+' of 3 freezes left).';
+ const br=si.breaks.find(x=>x.date===dt);if(br)return'No streak freeze was ready, so the '+plural(br.len,'day')+' streak ended today.';return''}
 // Day off: today or a future date. Pending work from that date moves to the next study day.
 function dayOffDialog(dt,sl){const t=todayISO();const isT=dt===t,isPastD=dt<t;const stt=sl?slotTasks(sl):{carry:[],main:[]};const pend=stt.carry.concat(stt.main).filter(x=>x.must&&x.kind!=='log'&&!tDone(x));const mins=pend.reduce((a,x)=>a+x.min,0);const d={n:sl?sl.n:0};
  const pf0=projectedFinish();S.off=S.off||{};const keep=S.off[dt];S.off[dt]={on:true,t:0};const pf1=projectedFinish();if(keep)S.off[dt]=keep;else delete S.off[dt];computeSchedule();
  let reason='';const reasons=['Health','Family','Travel','College','Other'];
  modal(close=>{const chips=h('div',{class:'row wrap',style:{gap:'6px',margin:'6px 0 14px'}},reasons.map(r=>{const b=h('button',{class:'chip plain pick',onclick:()=>{reason=reason===r?'':r;chips.querySelectorAll('.pick').forEach(x=>x.classList.toggle('on',x.textContent===reason))}},r);return b}));
   return h('div',{},h('div',{class:'officon small'},ic('coffee','lg')),h('h2',{text:isT?'Take today off?':isPastD?'Mark '+fmtD(dt)+' as a day off?':'Day off on '+fmtD(dt)+'?'}),
-   isPastD?h('p',{class:'muted',text:'You did not study on '+fmtD(dt)+'. Marking it as a day off keeps your streak safe without using a streak freeze. The plan already moved on, so nothing else changes.'}):h('p',{class:'muted',text:(isT?(pend.length?plural(pend.length,'remaining must task')+' (~'+fmtMin(mins)+') and':'')+' the rest of the plan move forward by one study day.':'Day '+d.n+' and everything after it move forward by one study day.')+' Finished tasks stay done and count for today. Your streak is protected.'}),
+   isPastD?h('p',{class:'muted',text:'You did not study on '+fmtD(dt)+'. This records it as a day off with the reason. For the streak it is the same as a missed day (a freeze was used if one was ready). The plan already moved on.'}):h('p',{class:'muted',text:(isT?(pend.length?plural(pend.length,'remaining must task')+' (~'+fmtMin(mins)+') and':'')+' the rest of the plan move forward by one study day.':'Day '+d.n+' and everything after it move forward by one study day.')+' Finished tasks stay done and count for today. '+(()=>{const si=streakInfo();return isT?(si.freezes?'This uses 1 streak freeze (you have '+si.freezes+' of 3).':'No streak freeze ready: your streak will break.'):'On that day a streak freeze is used if you have one; otherwise the streak breaks.'})()}),
    isPastD?null:h('div',{class:'note small',style:{margin:'10px 0'}},'Projected finish: '+fmtDY(pf0)+' → '+fmtDY(pf1)),
    h('div',{class:'tiny muted',text:'Reason (optional)'}),chips,
    h('div',{class:'row',style:{justifyContent:'flex-end',gap:'8px'}},h('button',{class:'btn ghost',onclick:close},'Cancel'),
-    h('button',{class:'btn primary',onclick:()=>{close();const sp=$('.split');const go=()=>{setDayOff(dt,true,reason);Sfx.play('off');toast(isT?'Day off saved. See you on '+fmtD(nextStudyDate(addDays(t,1)))+'.':isPastD?fmtD(dt)+' marked as a day off. Streak safe.':'Day off planned for '+fmtD(dt)+'.');location.hash=isT?'#/today':location.hash;rerender()};
+    h('button',{class:'btn primary',onclick:()=>{close();const sp=$('.split');const go=()=>{setDayOff(dt,true,reason);Sfx.play('off');setTimeout(showStreakNews,900);toast(isT?'Day off saved. See you on '+fmtD(nextStudyDate(addDays(t,1)))+'.':isPastD?fmtD(dt)+' marked as a day off. Streak safe.':'Day off planned for '+fmtD(dt)+'.');location.hash=isT?'#/today':location.hash;rerender()};
      if(sp&&isT&&!matchMedia('(prefers-reduced-motion: reduce)').matches){sp.classList.add('leaving');setTimeout(go,380)}else go()}},ic('coffee','sm'),isT?'Take the day off':isPastD?'Mark as day off':'Plan day off')))})}
 function taskMeta(t){const m=[chip(t.comp)];const pr=taskProgress(t);
  if(pr){m.push(h('span',{class:'chip plain'},ic('target','sm'),pr.n?pr.ok+'/'+pr.n+' solved':'',pr.quiz?(pr.n?' · ':'')+(pr.qd?'quiz done':'quiz'):''))}
@@ -1267,7 +1330,7 @@ function viewProgress(){const wrap=h('div',{class:'wrap'});const st=streakInfo()
  const kpi=(v,l,s)=>h('div',{class:'card kpi'},h('b',{text:v}),h('span',{text:l}),s?h('div',{class:'tiny muted',style:{marginTop:'4px'},text:s}):null);
  add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Honest numbers'}),h('h1',{text:'Progress'}),h('p',{text:'Projected finish '+fmtDY(projectedFinish())+' (target: '+fmtDY(C.meta.target||C.meta.end)+')'})))]);
  add(wrap,[h('div',{class:'grid g4'},kpi(done+' / '+IX.study.length,'days complete',Math.round(done/IX.study.length*100)+'% of plan'),kpi(fmtMin(mins),'study time logged','planned minutes of done tasks'),
-  kpi(String(solved),'practice items solved',tried?Math.round(firstTry/Math.max(1,solved)*100)+'% first try, no peek':'not started'),(()=>{const k=kpi(st.cur+' / '+st.best,'streak / best',st.freezes?st.freezes+' freeze ready':'7 counted days = 1 freeze');k.querySelector('b').prepend(flame(26,!st.todayCounts),' ');return k})())]);
+  kpi(String(solved),'practice items solved',tried?Math.round(firstTry/Math.max(1,solved)*100)+'% first try, no peek':'not started'),(()=>{const k=kpi(st.cur+' / '+st.best,'streak / best',st.freezes+' of 3 freezes · a full Mon-Sat week = 1 freeze');k.querySelector('b').prepend(flame(26,!st.todayCounts,!!st.frozen),' ');k.appendChild(freezeSlots(st.freezes,true));return k})())]);
  // skills
  const comps=['excel','sql','powerbi','python','stats','projects','linkedin','github','career'];const sk=h('div',{class:'card'},h('h3',{text:'Skill progress'}),h('p',{class:'tiny muted',text:'Bar = share of the subject\'s planned minutes completed. Accuracy = solved / attempted items.'}));
  comps.forEach(c=>{let tot=0,dn=0;IX.study.forEach(d=>d.tasks.forEach(t=>{if(t.comp===c&&t.must){tot+=t.min;if(tDone(t))dn+=t.min}}));if(!tot)return;
@@ -1361,7 +1424,7 @@ async function boot(){loadState();applyTheme();
  document.body.innerHTML='<div class="loading"><div><div class="spin"></div>Loading DA Journey…</div></div>';
  await Drive.boot();
  try{const r=await fetch('content.json',{cache:'no-cache'});C=await r.json()}catch(e){try{const r=await fetch('content.json');C=await r.json()}catch(e2){document.body.innerHTML='<div class="loading">Content did not load. Check your internet connection and reload.</div>';return}}
- indexContent();if(migrateIds())save();try{checkBadges()}catch(e){}lastLevel=xpInfo().L;if(!unlocked){lockView();return}shell();route(false);
+ indexContent();if(migrateIds())save();try{checkBadges()}catch(e){}setTimeout(()=>{try{showStreakNews()}catch(e){}},1500);lastLevel=xpInfo().L;if(!unlocked){lockView();return}shell();route(false);
  if(Drive.conn())Drive.auto(true);
  if('serviceWorker' in navigator&&!DEV&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});}
 boot();
