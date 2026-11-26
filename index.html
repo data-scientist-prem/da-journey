@@ -386,7 +386,7 @@ input.vol{width:130px;accent-color:var(--primary)}
 <script>
 'use strict';
 /* ===== DA Journey v2 ===== */
-const APP_VER='2026.11.26-4';
+const APP_VER='2026.11.26-5';
 const CFG={
  CLIENT_ID:'331264298614-jr5f5ib5o7jkaqrbs3k7nla4gm7lsrv2.apps.googleusercontent.com', // set after the "DA Journey" Google Cloud project is created
  OWNER_H:'e3f2701c4914321da0c06ace2cb5fad3a3b71419d9da7f3de73f83a503bdaa1b', // SHA-256 of the owner's Google email (same owner as Hunter System)
@@ -566,23 +566,31 @@ function migrateIds(){if(!C||!C.idmap)return migrateLogs();let ch=migrateLogs();
 
 /* ---------- plan logic ---------- */
 const tDone=t=>!!(S.tasks[t.id]&&S.tasks[t.id].done);
-function setTaskDone(t,v,extra){const x0=xpInfo().xp;const sc0=computeSchedule();const td0=sc0.todayDay;const dd=IX.task[t.id]&&IX.task[t.id].d;const was=dd?(realDone(dd)?'done':'x'):'';
- const ahead=!!(v&&dd&&td0&&dd.n>td0.n);const sk0=v?streakInfo().todayCounts:true;
+function setTaskDone(t,v,extra){const x0=xpInfo().xp;const sc0=computeSchedule();const T0=sc0.todaySlot;const dd=IX.task[t.id]&&IX.task[t.id].d;
+ const gs0=dd?SCHED.groupSlot[dd.id]:null,wasDone=dd?realDone(dd):false,dayDone0=todayComplete();
+ const ahead=!!(v&&dd&&gs0&&gs0.kind==='future');const sk0=v?streakInfo().todayCounts:true;
  const o=Object.assign({},S.tasks[t.id]||{},extra||{});o.done=v?(o.done||now()):0;o.t=now();if(v&&!o.date)o.date=todayISO();if(!v)delete o.date;S.tasks[t.id]=o;syncLogTasks();save();
- const sc1=computeSchedule(),td1=sc1.todayDay;
+ computeSchedule();const T1=SCHED.todaySlot;
  if(v)Sfx.play('tick');
- if(v&&dd&&was!=='done'&&realDone(dd)){floatXP(xpInfo().xp-x0);const st=streakInfo();const merged=dd.date===todayISO()&&td0&&dd.n>td0.n;
-  setTimeout(()=>celebrate('day','Day '+dd.n+' complete!',(merged?'Done today, so it moved into today and every later day moved up by one. ':'')+'Streak: '+plural(st.cur,'day')+' · Level '+xpInfo().L),350);lastLevel=xpInfo().L;return}
- if(v){floatXP(xpInfo().xp-x0);
-  if(!sk0){const si=streakInfo();if(si.todayCounts)setTimeout(()=>{Sfx.play('streak');toast('Streak extended: '+plural(si.cur,'day'));const ts=document.getElementById('topstreak');if(ts){ts.classList.remove('bump');void ts.offsetWidth;ts.classList.add('bump')}},450)}
-  if(ahead)setTimeout(()=>{Sfx.play('move');toast('Done ahead: it now shows in Today. Day '+dd.n+' gets lighter.')},250);
-  else if(td1&&td0&&td1.id!==td0.id&&td1.sched==='pending')setTimeout(()=>toast('Day '+td1.n+' moved into today'),300)}
+ if(!v){checkLevelUp();return}
+ floatXP(xpInfo().xp-x0);
+ if(!sk0){const si=streakInfo();if(si.todayCounts)setTimeout(()=>{Sfx.play('streak');toast('Streak extended: '+plural(si.cur,'day'));const ts=document.getElementById('topstreak');if(ts){ts.classList.remove('bump');void ts.offsetWidth;ts.classList.add('bump')}},450)}
+ // a whole later day finished today: it moves into today and every later day moves up one number
+ const reallyAhead=ahead&&T1&&dd._i>T1.gi;
+ if(ahead&&!reallyAhead&&T1&&dd._i===T1.gi){setTimeout(()=>{Sfx.play('move');toast('Today became Day '+T1.n+'.')},250);checkLevelUp();return}
+ if(reallyAhead&&!wasDone&&realDone(dd)){const n=gs0.n,k=T1?T1.n:n;setTimeout(()=>celebrate('day','Day '+n+' done in advance!','It moved into Day '+k+' (today). The old Day '+(n+1)+' is now Day '+n+'; every later day moved up by one.'),300);lastLevel=xpInfo().L;return}
+ if(reallyAhead){setTimeout(()=>{Sfx.play('move');toast('Done ahead: moved to Day '+(T1?T1.n:'')+' (today), under "Done ahead".')},250);checkLevelUp();return}
+ if(!dayDone0&&todayComplete()&&T1){const st=streakInfo();setTimeout(()=>celebrate('day','Day '+T1.n+' complete!','Streak: '+plural(st.cur,'day')+' · Level '+xpInfo().L),350);lastLevel=xpInfo().L;return}
  checkLevelUp()}
-// The daily log belongs to a date: one log ticks the log task of every day dated that day (the main day and days merged into it).
-// A log task ticked for a date the day no longer sits on (a merged day was reopened) is unticked.
-function syncLogTasks(){computeSchedule();for(const d of IX.study){const lt=d.tasks.find(x=>x.kind==='log');if(!lt)continue;const o=S.tasks[lt.id];
-  if(o&&o.done&&o.auto&&o.date===todayISO()&&d.date>todayISO()&&d.sched==='pending'){o.done=0;delete o.date;o.t=now();continue}
-  if(d.date&&d.date<=todayISO()&&logDone(d.date)&&!(o&&o.done)&&(d.sched==='done'||d.date===todayISO()))S.tasks[lt.id]=Object.assign({},o||{},{done:now(),date:d.date,auto:true,t:now()})}}
+// The daily log belongs to a date. A log written on a date ticks the log task of that date's main day and of every day finished early on that date.
+// An automatic tick made today is removed again if that day is reopened.
+function syncLogTasks(){computeSchedule();const t=todayISO(),want={};
+ for(const sl of SCHED.slots){if(sl.kind==='future'||!logDone(sl.date))continue;
+  if(sl.g){const lt=sl.g.tasks.find(x=>x.kind==='log');if(lt)want[lt.id]=sl.date}
+  for(const g of IX.study){if(g===sl.g||!realDone(g)||lastDoneDate(g)!==sl.date)continue;const l2=g.tasks.find(x=>x.kind==='log');if(l2&&!(l2.id in want))want[l2.id]=sl.date}}
+ for(const g of IX.study){const lt=g.tasks.find(x=>x.kind==='log');if(!lt)continue;const o=S.tasks[lt.id];
+  if(want[lt.id]&&!(o&&o.done))S.tasks[lt.id]=Object.assign({},o||{},{done:now(),date:want[lt.id],auto:true,t:now()});
+  else if(!want[lt.id]&&o&&o.done&&o.auto&&o.date===t){o.done=0;delete o.date;o.t=now()}}}
 const mustOf=d=>d.tasks.filter(t=>t.must),stretchOf=d=>d.tasks.filter(t=>!t.must),realMust=d=>d.tasks.filter(t=>t.must&&t.kind!=='log');
 const realDone=d=>realMust(d).every(tDone);
 const logTaskDone=(t,d)=>tDone(t)||(t.kind==='log'&&d&&d.date&&logDone(d.date));
@@ -611,31 +619,63 @@ function offInfo(dt){if(isUserOff(dt))return{kind:'user',title:'Day off',note:(S
 function nextStudyDate(dt){let x=dt;for(let i=0;i<400&&isOffDate(x);i++)x=addDays(x,1);return x}
 function doneDate(t){const o=S.tasks[t.id];return o&&o.done?(o.date||iso(new Date(o.done))):null}
 function lastDoneDate(d){let l='';realMust(d).forEach(x=>{const dd=doneDate(x);if(dd&&dd>l)l=dd});return l}
-let SCHED={today:'',todayDay:null,doneToday:[],first:null,end:''};
-function computeSchedule(){const t=todayISO();const doneToday=[];let cursor=null,first=null;
- const touchedToday=d=>d.tasks.some(x=>doneDate(x)===t);
- for(const d of IX.study){
-  if(realDone(d)){d.date=lastDoneDate(d)||d.base;d.sched='done';if(d.date===t)doneToday.push(d);continue}
-  if(cursor===null){first=d;
-   // a later day is never pulled in by partial work once a day was finished today: its ticked tasks show as 'Done ahead' (Prem, 26 Nov)
-   const canToday=!isUserOff(t)&&!doneToday.length&&(touchedToday(d)||!isOffDate(t));
-   cursor=canToday?t:nextStudyDate(addDays(t,1))}
-  else cursor=nextStudyDate(addDays(cursor,1));
-  d.date=cursor;d.sched='pending'}
- const todayDay=first&&first.date===t?first:(doneToday.length?doneToday[0]:null);
- SCHED={today:t,todayDay,doneToday,first,end:IX.study.length?IX.study.reduce((m,d)=>d.date>m?d.date:m,''):t};return SCHED}
+/* ---------- day slots (Prem, 26 Nov 2026 evening) ----------
+ "Day N" is a study date, not a fixed block of content (IX.study holds the content blocks, called groups here):
+ - every past date with finished tasks is a day, showing exactly what was finished on that date;
+ - today is the next day: its main work is the next unfinished group; unfinished tasks of earlier groups sit on top ("Pending from earlier days");
+ - tasks of later groups ticked today leave their future day and show on today's page under "Done ahead";
+ - a later group finished completely today drops out of the future list, so every later day moves up one number (the total goes down);
+ - a day off or a missed date is not a day. After a day off (with or without some work), the same group continues, so pending work shifts by one day;
+ - the daily log is one per date. */
+let SCHED={today:'',slots:[],todaySlot:null,end:'',projEnd:'',groupSlot:{}};
+function computeSchedule(){const t=todayISO(),G=IX.study;
+ const by={};G.forEach((g,i)=>{g._i=i;let cd='';for(const x of g.tasks){const dd=doneDate(x);if(dd)(by[dd]=by[dd]||[]).push(x);if(x.must&&x.kind!=='log'){if(!dd)cd=null;else if(cd!==null&&dd>cd)cd=dd}}g._cd=cd||null;
+  if(g._cd===''||realMust(g).length===0)g._cd=g._cd||'0000-00-00'});
+ const doneBy=(g,dt)=>!!g._cd&&g._cd<=dt;
+ const firstInc=(from,dt)=>{for(let i=from;i<G.length;i++)if(!doneBy(G[i],dt))return i;return G.length};
+ const worked=dt=>(by[dt]||[]).some(x=>x.kind!=='log');
+ const past=Object.keys(by).filter(dt=>dt<t&&worked(dt)).sort();
+ const slots=[];let s=firstInc(0,past.length?addDays(past[0],-1):addDays(t,-1));
+ for(const D of past){slots.push({n:slots.length+1,date:D,kind:'past',g:G[s]||null,gi:s,off:isUserOff(D)});s=isUserOff(D)?firstInc(s,D):firstInc(s+1,D)}
+ let todaySlot=null;const tOff=isUserOff(t);
+ if(worked(t)||!isOffDate(t)){todaySlot={n:slots.length+1,date:t,kind:'today',g:G[s]||null,gi:s,off:tOff};slots.push(todaySlot)}
+ const ns=todaySlot?(tOff?firstInc(s,t):firstInc(s+1,t)):s;
+ let dt=todaySlot?addDays(t,1):t;
+ for(let i=ns;i<G.length;i++){if(doneBy(G[i],t))continue;dt=nextStudyDate(dt);slots.push({n:slots.length+1,date:dt,kind:'future',g:G[i],gi:i});dt=addDays(dt,1)}
+ // which day each group is shown on (for labels and older code that reads d.date / d.sched)
+ const gsl={};for(const sl of slots)if(sl.g&&!gsl[sl.g.id])gsl[sl.g.id]=sl;
+ for(const g of G){if(doneBy(g,t)){g.sched='done';g.date=g._cd==='0000-00-00'?(g.base):g._cd;const sl=slots.find(x=>x.date===g.date&&x.kind!=='future');if(sl)gsl[g.id]=sl}
+  else{g.sched='pending';const sl=(todaySlot&&g._i<todaySlot.gi)?todaySlot:gsl[g.id];if(sl){gsl[g.id]=sl;g.date=sl.date}else g.date=g.base}}
+ const end=slots.length?slots[slots.length-1].date:t;
+ // unfinished work carried into today counts toward the projected finish (about 4 h of must work per day)
+ let carry=0;if(todaySlot)for(let i=0;i<todaySlot.gi&&i<G.length;i++)for(const x of G[i].tasks)if(x.must&&x.kind!=='log'&&!tDone(x))carry+=x.min;
+ let pe=end;for(let k=Math.floor(carry/240);k>0;k--)pe=nextStudyDate(addDays(pe,1));
+ SCHED={today:t,slots,todaySlot,end,projEnd:pe,groupSlot:gsl,carryMin:carry};return SCHED}
+const slotByN=n=>SCHED.slots.find(x=>x.n===+n)||null;
+const dayNo=g=>{const sl=g&&SCHED.groupSlot[g.id];return sl?sl.n:(g?g.n:0)};
+// what a day page shows
+function slotTasks(sl){const G=IX.study,out={carry:[],main:[],ahead:[],earlierDone:0,movedOut:0};if(!sl)return out;
+ if(sl.kind==='future'){out.main=sl.g.tasks.filter(x=>!tDone(x));out.earlierDone=sl.g.tasks.filter(x=>tDone(x)&&x.kind!=='log').length;return out}
+ const D=sl.date,isT=sl.kind==='today';
+ for(let i=0;i<G.length;i++){const g=G[i];for(const x of g.tasks){const dd=doneDate(x);
+  if(i===sl.gi){if(dd===D||(!dd&&isT))out.main.push(x);else if(x.kind==='log')continue;else if(dd&&dd<D)out.earlierDone++;else out.movedOut++}
+  else if(x.kind==='log')continue;
+  else if(i<sl.gi){if(dd===D||(!dd&&isT))out.carry.push(x)}
+  else if(dd===D)out.ahead.push(x)}}
+ return out}
+function todayComplete(){const T=SCHED.todaySlot;if(!T||T.off)return false;const st=slotTasks(T);const m=st.carry.concat(st.main).filter(x=>x.must&&x.kind!=='log');return m.length>0&&m.every(tDone)}
 function plannedDayFor(dateISO){let p=null;for(const d of IX.study){if(d.base<=dateISO)p=d;else break}return p}
 function studyDaysBetween(a,b){let n=0,x=a;while(x<b){x=addDays(x,1);if(!isRestDow(x)&&!isFixedOff(x))n++}return n}
 function pace(){computeSchedule();const cur=currentDay();const t=todayISO();const pl=plannedDayFor(t);
  if(!cur)return{finished:true,diff:0,behind:0,ahead:0};
- const pf=SCHED.end,tg=C.meta.target||C.meta.end;
+ const pf=SCHED.projEnd,tg=C.meta.target||C.meta.end;
  const behind=pf>tg?studyDaysBetween(tg,pf):0,ahead=pf<tg?studyDaysBetween(pf,tg):0;
  return{cur,planned:pl,behind,ahead,diff:ahead-behind,target:tg,projected:pf}}
-function projectedFinish(){computeSchedule();return currentDay()?SCHED.end:todayISO()}
+function projectedFinish(){computeSchedule();return currentDay()?SCHED.projEnd:todayISO()}
 // days with no study and no day off since the last active day (the plan already moved; the streak may use a freeze)
 function missedSince(){const a=activity();const t=todayISO();const ds=Object.keys(a).filter(x=>x<t).sort();if(!ds.length)return[];
  const out=[];for(let x=addDays(ds[ds.length-1],1);x<t;x=addDays(x,1))if(!isOffDate(x))out.push(x);return out}
-function setDayOff(dt,on,reason){const prevToday=computeSchedule().todayDay;S.off=S.off||{};S.off[dt]={on:!!on,t:now(),reason:reason||''};save()}
+function setDayOff(dt,on,reason){S.off=S.off||{};S.off[dt]={on:!!on,t:now(),reason:reason||''};save()}
 
 /* ---------- practice helpers ---------- */
 const prs=id=>S.prac[id]||null;
@@ -767,16 +807,16 @@ const Drive=(()=>{
  const folderUrl=()=>{const f=localStorage.getItem('daj-folder');return f?'https://drive.google.com/drive/folders/'+f:'https://drive.google.com/drive/my-drive'};
  return{status,signIn:()=>go(false),signOut,sync,auto,boot,ok,conn,email,folderUrl,notReady}
 })();
-function summary(){const st=streakInfo(),x=xpInfo(),p=pace();const cur=currentDay();const tdy=SCHED.todayDay;const offs=Object.keys(S.off||{}).filter(isUserOff).sort();
- return{currentDay:cur?cur.n:'finished',currentDayTitle:cur?cur.title:'',plannedToday:p.planned?p.planned.n:0,behindDays:p.behind||0,aheadDays:p.ahead||0,
-  daysDone:IX.study.filter(d=>dayStat(d).st==='done').length,totalDays:IX.study.length,xp:x.xp,level:x.L,streak:st.cur,bestStreak:st.best,
-  solved:Object.values(S.prac).filter(q=>q.ok).length,applications:Object.values(S.kit.apps).filter(a=>!a.del&&a.status!=='target').length,targets:Object.values(S.kit.apps).filter(a=>!a.del&&a.status==='target').length,projected:projectedFinish(),target:C.meta.target||C.meta.end,scheduledToday:tdy?{day:tdy.n,title:tdy.title,status:tdy.sched}:null,daysOff:offs,daysOffCount:offs.length,postDigest:postDigest(),openFeedback:Object.values(S.fb||{}).filter(f=>f.status==='open').map(f=>({where:f.where,text:f.text,day:f.day,created:f.created}))}}
+function summary(){const st=streakInfo(),x=xpInfo(),p=pace();const cur=currentDay();const T=SCHED.todaySlot,nf=SCHED.slots.find(z=>z.kind==='future');const CS=T||nf;const offs=Object.keys(S.off||{}).filter(isUserOff).sort();
+ return{currentDay:cur&&CS?CS.n:'finished',currentDayTitle:CS&&CS.g?CS.g.title:'',plannedToday:p.planned?p.planned.n:0,behindDays:p.behind||0,aheadDays:p.ahead||0,
+  daysDone:SCHED.slots.filter(z=>z.kind==='past').length+(todayComplete()?1:0),totalDays:SCHED.slots.length,contentDaysDone:IX.study.filter(d=>realDone(d)).length,contentDaysTotal:IX.study.length,carryMin:SCHED.carryMin||0,xp:x.xp,level:x.L,streak:st.cur,bestStreak:st.best,
+  solved:Object.values(S.prac).filter(q=>q.ok).length,applications:Object.values(S.kit.apps).filter(a=>!a.del&&a.status!=='target').length,targets:Object.values(S.kit.apps).filter(a=>!a.del&&a.status==='target').length,projected:projectedFinish(),target:C.meta.target||C.meta.end,scheduledToday:T?{day:T.n,title:T.g?T.g.title:'',status:T.off?'day off':todayComplete()?'done':'pending'}:null,daysOff:offs,daysOffCount:offs.length,postDigest:postDigest(),openFeedback:Object.values(S.fb||{}).filter(f=>f.status==='open').map(f=>({where:f.where,text:f.text,day:f.day,created:f.created}))}}
 // for Claude (reads this file via Google Drive): what to post about next
 function postDigest(){const cur=currentDay();const posts=IX.study.flatMap(x=>x.tasks.filter(y=>y.kind==='post').map(y=>({t:y,d:x})));
  const nextP=posts.find(p=>!tDone(p.t));const lastDone=[...posts].reverse().find(p=>tDone(p.t));
- const out={nextPostTask:nextP?{day:nextP.d.n,title:nextP.t.t,template:nextP.t.tpl||''}:null,lastPostDone:lastDone?{day:lastDone.d.n,title:lastDone.t.t,link:(S.tasks[lastDone.t.id]||{}).proof||''}:null};
+ const out={nextPostTask:nextP?{day:dayNo(nextP.d),title:nextP.t.t,template:nextP.t.tpl||''}:null,lastPostDone:lastDone?{day:dayNo(lastDone.d),title:lastDone.t.t,link:(S.tasks[lastDone.t.id]||{}).proof||''}:null};
  if(nextP){const m=postMaterial(nextP.t,nextP.d);out.period=m.range;out.learned=m.learned;out.built=m.built;out.practice=m.solved+'/'+m.tried+' solved';out.quizzes=m.quizzes;out.proofs=m.proofs;out.logs=m.logs}
- out.currentDay=cur?cur.n+': '+cur.title:'finished';return out}
+ {const T=SCHED.todaySlot||SCHED.slots.find(z=>z.kind==='future');out.currentDay=cur&&T?T.n+': '+(T.g?T.g.title:''):'finished'}return out}
 
 /* ---------- Python / SQL runner (Pyodide in a worker) ---------- */
 const Runner={worker:null,state:'idle',version:'',seq:0,pending:{},initP:null,error:'',ls:new Set(),
@@ -868,7 +908,7 @@ function rerender(){route(true)}
 function route(keep){if(!C)return;if(!unlocked){lockView();return}computeSchedule();
  if(!$('#view'))shell();const hs=(location.hash||'#/today').slice(2).split('?')[0].split('/');const k=hs[0]||'today';
  const v=$('#view');const y=keep?scrollY:0;v.innerHTML='';
- const map={today:()=>viewDay(null),day:()=>viewDay(IX.day[hs[1]]),plan:viewPlan,practice:()=>viewLibrary(hs[1]),set:()=>viewSet(hs[1],hs[2]),
+ const map={today:()=>viewDay(null),day:()=>{const k2=hs[1];const sl=/^\d+$/.test(k2||'')?slotByN(k2):(IX.day[k2]&&SCHED.groupSlot[k2]);if(sl&&sl.kind==='today'){return viewDay(null)}return viewDay(sl||{kind:'none'})},plan:viewPlan,practice:()=>viewLibrary(hs[1]),set:()=>viewSet(hs[1],hs[2]),
   interview:()=>viewInterview(hs[1]),project:()=>viewProject(hs[1]),progress:viewProgress,kit:()=>viewKit(hs[1]),settings:viewSettings};
  const navk={day:'plan',set:'practice',interview:'practice',project:'practice'}[k]||k;
  updateNav(navk);try{add(v,[(map[k]||map.today)()])}catch(e){console.error(e);add(v,[h('div',{class:'card'},h('h2',{text:'Something went wrong'}),h('pre',{class:'code',text:String(e.stack||e)}))])}
@@ -888,70 +928,74 @@ function lockView(){document.body.innerHTML='';const msg=sessionStorage.getItem(
 function ringSVG(p,size,from){const r=46,c=2*Math.PI*r;const f=from==null?p:from;const el=h('div',{html:`<svg viewBox="0 0 112 112" aria-hidden="true"><circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--surface3)" stroke-width="10"/><circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--primary)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-Math.min(1,f))}" style="transition:stroke-dashoffset .7s cubic-bezier(.3,1.2,.5,1)"/></svg>`}).firstChild;
  if(f!==p)requestAnimationFrame(()=>requestAnimationFrame(()=>{const cc=el.querySelectorAll('circle')[1];if(cc)cc.setAttribute('stroke-dashoffset',String(c*(1-Math.min(1,p))))}));return el}
 function blockOf(d){return C.meta.blocks.find(b=>b.id===d.block)||{title:''}}
-function paceText(d){const t=todayISO();if(d.sched==='done')return'Completed '+(d.date===t?'today':fmtD(d.date));const dd=daysBetween(t,d.date);
- if(dd===0)return'Scheduled for today';return'Scheduled for '+fmtD(d.date)+(dd===1?' (tomorrow)':' (in '+dd+' days)')}
-function viewDay(d){const isToday=!d;const t0=todayISO();
- if(isToday){const sc=SCHED;d=sc.todayDay;
-  if(!currentDay())return h('div',{class:'card donecard'},h('div',{class:'big'},ic('trophy','lg')),h('h1',{text:'All '+IX.study.length+' days complete!'}),h('p',{class:'muted',text:'Journey complete. Focus on applications and interviews; keep using the Career kit tracker.'}));
-  if(!d)return offDayView(t0)}
- if(d.type!=='study')return restDayView(d);
- const st=dayStat(d),p=pace(),t=todayISO();const wrap=h('div',{class:'wrap'});
- const idx=IX.study.indexOf(d),prev=IX.study[idx-1],next=IX.study[idx+1];
- let paceLine=paceText(d);if(isToday&&p.diff<0)paceLine+=' · '+plural(-p.diff,'day')+' behind the target';else if(isToday&&p.diff>0)paceLine+=' · '+plural(p.diff,'day')+' ahead of the target';
- const offBtn=(isToday&&d.sched==='pending'&&d.date===t)?h('button',{class:'btn sm ghost offbtn',onclick:()=>dayOffDialog(t,d)},ic('coffee','sm'),'Take today off'):
-  (!isToday&&d.sched==='pending'&&d.date>t)?h('button',{class:'btn sm ghost offbtn',onclick:()=>dayOffDialog(d.date,d)},ic('coffee','sm'),'Day off on '+fmtD(d.date)):null;
- add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(isToday?'Today · ':'')+blockOf(d).title+' · Day '+(isToday&&SCHED.doneToday.filter(x=>x!==d).length?[d].concat(SCHED.doneToday.filter(x=>x!==d)).map(x=>x.n).sort((a,b)=>a-b).join(' + '):d.n)+' of '+IX.study.length}),h('h1',{text:d.title}),h('p',{text:paceLine})),
-  h('div',{class:'row wrap'},offBtn,prev?h('a',{class:'btn sm',href:'#/day/'+prev.id,'aria-label':'Previous day'},ic('left','sm'),'Day '+prev.n):null,next?h('a',{class:'btn sm',href:'#/day/'+next.id,'aria-label':'Next day'},'Day '+next.n,ic('right','sm')):null))]);
- if(isToday){const ms=missedSince();if(ms.length&&!ui.missedHide)add(wrap,[h('div',{class:'note amber slidein',style:{marginBottom:'14px'}},ic('cal','sm'),' No study on '+ms.map(fmtD).join(', ')+' and no day off taken, so the plan moved forward by '+plural(ms.length,'day')+'. Next time tap "Take today off" to keep your streak safe. ',h('button',{class:'linkbtn',onclick:()=>{ui.missedHide=true;rerender()}},'Hide'))])}
- if(isToday&&isOffDate(t)&&d.sched==='pending')add(wrap,[h('div',{class:'note amber',style:{marginBottom:'14px'}},ic('coffee','sm'),' Today is a rest day. The work you do today still counts.')]);
- if(!isToday&&d.sched==='pending'&&currentDay()&&currentDay().id!==d.id)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Scheduled for '+fmtD(d.date)+'. Tasks you tick here today move to Today\'s list. Finish all its must tasks today and the whole day moves into today, and every later day moves up by one. ',h('a',{href:'#/today'},'Go to Today'))]);
+function slotPace(sl){const t=todayISO();if(sl.kind==='past')return'Worked on '+fmtD(sl.date);if(sl.kind==='today')return'Today, '+fmtD(sl.date);
+ const dd=daysBetween(t,sl.date);return'Scheduled for '+fmtD(sl.date)+(dd===1?' (tomorrow)':' (in '+dd+' days)')}
+const nextFutureSlot=()=>SCHED.slots.find(x=>x.kind==='future')||null;
+// where a task shown on another day's page comes from
+function fromLabel(x){const g=IX.task[x.id].d,T=SCHED.todaySlot;const ps=SCHED.slots.find(s=>s.kind==='past'&&s.gi===g._i);
+ if(T&&g._i<T.gi)return ps?'From Day '+ps.n:'Earlier day';const sl=SCHED.groupSlot[g.id];
+ if(sl&&sl.kind==='future')return'From Day '+sl.n;return realDone(g)?'Day finished early':'Later day'}
+function viewDay(sl){const t=todayISO();
+ if(sl&&sl.kind==='none')return h('div',{class:'card'},h('h2',{text:'This day is not in the plan any more'}),h('p',{class:'muted',text:'Days move as you work ahead or take days off.'}),h('a',{class:'btn primary',href:'#/plan'},'Open the plan'));
+ if(!sl){sl=SCHED.todaySlot;if(!sl){if(!currentDay())return h('div',{class:'card donecard'},h('div',{class:'big'},ic('trophy','lg')),h('h1',{text:'All days complete!'}),h('p',{class:'muted',text:'Journey complete. Focus on applications and interviews; keep using the Career kit tracker.'}));return offDayView(t)}}
+ if(sl.kind==='today'&&sl.off)return offDayView(t);
+ const isToday=sl.kind==='today',isPast=sl.kind==='past',isFut=sl.kind==='future';const g=sl.g;const total=SCHED.slots.length;const st=slotTasks(sl),p=pace();
+ const wrap=h('div',{class:'wrap'});const prev=slotByN(sl.n-1),next=slotByN(sl.n+1);const K='s'+sl.n;
+ let paceLine=slotPace(sl);if(isToday&&p.diff<0)paceLine+=' · '+plural(-p.diff,'day')+' behind the target';else if(isToday&&p.diff>0)paceLine+=' · '+plural(p.diff,'day')+' ahead of the target';
+ const offBtn=isToday?h('button',{class:'btn sm ghost offbtn',onclick:()=>dayOffDialog(t,sl)},ic('coffee','sm'),'Take today off'):isFut?h('button',{class:'btn sm ghost offbtn',onclick:()=>dayOffDialog(sl.date,sl)},ic('coffee','sm'),'Day off on '+fmtD(sl.date)):null;
+ const hrefOf=x=>x.kind==='today'?'#/today':'#/day/'+x.n;
+ add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(isToday?'Today · ':'')+(g?blockOf(g).title+' · ':'')+'Day '+sl.n+' of '+total}),h('h1',{text:g?g.title:'All planned content done'}),h('p',{text:paceLine})),
+  h('div',{class:'row wrap'},offBtn,prev?h('a',{class:'btn sm',href:hrefOf(prev),'aria-label':'Previous day'},ic('left','sm'),'Day '+prev.n):null,next?h('a',{class:'btn sm',href:hrefOf(next),'aria-label':'Next day'},'Day '+next.n,ic('right','sm')):null))]);
+ if(isToday){const ms=missedSince();if(ms.length&&!ui.missedHide)add(wrap,[h('div',{class:'note amber slidein',style:{marginBottom:'14px'}},ic('cal','sm'),' No study on '+ms.map(fmtD).join(', ')+' and no day off taken, so the plan moved forward by '+plural(ms.length,'day')+'. Next time tap "Take today off" to keep your streak safe. ',h('button',{class:'linkbtn',onclick:()=>{ui.missedHide=true;rerender()}},'OK'))])}
+ if(isToday&&isOffDate(t))add(wrap,[h('div',{class:'note amber',style:{marginBottom:'14px'}},ic('coffee','sm'),' Today is a rest day. The work you do today still counts as a day.')]);
+ if(isFut)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Scheduled for '+fmtD(sl.date)+'. A task you tick here is done today: it leaves this day and shows on Day '+(SCHED.todaySlot?SCHED.todaySlot.n:'')+' (today) under "Done ahead". Finish all of this day\'s must tasks today and the whole day moves into today, so every later day moves up one number. ',SCHED.todaySlot?h('a',{href:'#/today'},'Go to Today'):null)]);
+ const mustL=st.carry.concat(st.main).filter(x=>x.must&&x.kind!=='log');const dn=mustL.filter(tDone);
+ const tm=mustL.reduce((a,x)=>a+x.min,0),dm=dn.reduce((a,x)=>a+x.min,0);const pct=isPast?1:(tm?dm/tm:0);const complete=isToday&&todayComplete();
  const st2=streakInfo(),x=xpInfo();
- add(wrap,[h('section',{class:'card hero','aria-label':'Day progress'},h('div',{class:'ring'+(st.pct>=1?' full':'')},ringSVG(st.pct,0,(ui.ring=ui.ring||{})[d.id]),(()=>{ui.ring[d.id]=st.pct;return null})(),h('div',{class:'lbl'},h('b',{text:Math.round(st.pct*100)+'%'}),h('span',{text:'must done'}))),
-  h('div',{},h('h2',{style:{marginBottom:'6px'},text:st.st==='done'?'Day complete':st.cnt+' of '+st.n+' must tasks done'}),
-   h('p',{class:'muted',style:{margin:0}},st.st==='done'?'Great. Stretch tasks are optional.':'~'+fmtMin(st.left)+' of must tasks left'+(stretchOf(d).length?' · stretch '+fmtMin(stretchOf(d).reduce((a,t)=>a+t.min,0)):''))),
+ const head=isPast?plural(st.carry.concat(st.main,st.ahead).filter(z=>tDone(z)&&z.kind!=='log').length,'task')+' done on this day':isFut?plural(mustL.length,'must task')+' scheduled':complete?'Day complete':dn.length+' of '+mustL.length+' must tasks done';
+ const sub=isPast?(st.movedOut?plural(st.movedOut,'unfinished task')+' moved to later days.':'Everything planned for this day was finished.'):isFut?'~'+fmtMin(tm)+' of must work'+(st.earlierDone?' · '+plural(st.earlierDone,'task')+' already done ahead':''):complete?'Great. Stretch tasks are optional.':'~'+fmtMin(tm-dm)+' of must tasks left';
+ add(wrap,[h('section',{class:'card hero','aria-label':'Day progress'},h('div',{class:'ring'+(pct>=1?' full':'')},ringSVG(pct,0,(ui.ring=ui.ring||{})[K]),(()=>{ui.ring[K]=pct;return null})(),h('div',{class:'lbl'},h('b',{text:Math.round(pct*100)+'%'}),h('span',{text:isPast?'worked':'must done'}))),
+  h('div',{},h('h2',{style:{marginBottom:'6px'},text:head}),h('p',{class:'muted',style:{margin:0}},sub)),
   h('div',{class:'stats-mini'},h('div',{class:'streak'},flame(32,!st2.todayCounts),h('div',{},h('div',{class:'row',style:{gap:'8px'}},'Streak: '+plural(st2.cur,'day'),freezeTag(st2.freezes)),h('div',{class:'tiny',style:{fontWeight:500},text:st2.todayCounts?'Today counts':'90+ min of must tasks today extends your streak'}))),
    h('div',{class:'lvl'},h('div',{class:'row'},h('span',{text:'Level '+x.L+' · '+x.title}),h('span',{class:'muted',text:x.xp+' XP'})),h('div',{class:'bar',style:{marginTop:'6px'}},h('i',{style:{width:Math.round(x.pct*100)+'%'}})))))]);
  const list=h('div',{class:'stack'});
- if(st.st==='done'&&isToday===false&&currentDay()&&d.n<currentDay().n){}
- if(realDone(d))add(list,[h('div',{class:'card donecard popin'},h('div',{class:'big'},ic('check','lg')),h('h2',{text:'Day '+d.n+' complete'}),h('p',{class:'muted',text:'Must tasks done. You can start the next day now, or do the stretch tasks.'+(d.date&&d.date<=todayISO()&&!logDone(d.date)?' Last step: write the daily log below.':'')}),
-  next&&next.sched==='pending'?h('a',{class:'btn primary',href:'#/day/'+next.id},'Continue with Day '+next.n,ic('right','sm')):null,
-  next&&next.sched==='pending'&&isToday?h('p',{class:'tiny muted',style:{marginTop:'8px'},text:'Day '+next.n+' is scheduled for '+fmtD(next.date)+'. Tasks you finish from it today show in Today; finish all of it and it moves into today.'}):null)]);
- const sel=ui.sel[d.id]&&IX.task[ui.sel[d.id]]?IX.task[ui.sel[d.id]].t:(mustOf(d).find(t=>!tDone(t))||d.tasks[0]);
- const panel=h('div',{class:'card detail sticky',id:'detail'});
- const dayOfT=t=>(IX.task[t.id]&&IX.task[t.id].d)||d;
- const select=t=>{ui.sel[d.id]=t.id;document.querySelectorAll('.task').forEach(r=>r.setAttribute('aria-selected',r.dataset.id===t.id));panel.innerHTML='';add(panel,[taskDetail(t,dayOfT(t))]);
+ const nf=nextFutureSlot();
+ if(complete)add(list,[h('div',{class:'card donecard popin'},h('div',{class:'big'},ic('check','lg')),h('h2',{text:'Day '+sl.n+' complete'}),h('p',{class:'muted',text:'Must tasks done. You can start the next day now, or do the stretch tasks.'+(!logDone(t)?' Last step: write the daily log below.':'')}),
+  nf?h('a',{class:'btn primary',href:'#/day/'+nf.n},'Continue with Day '+nf.n,ic('right','sm')):null,
+  nf?h('p',{class:'tiny muted',style:{marginTop:'8px'},text:'Tasks you tick on Day '+nf.n+' are done today and move here under "Done ahead". Finish all of Day '+nf.n+' today and it moves into today.'}):null)]);
+ const all=st.carry.concat(st.main,st.ahead);
+ const sel=ui.sel[K]&&IX.task[ui.sel[K]]?IX.task[ui.sel[K]].t:(all.find(z=>z.must&&!tDone(z))||all[0]);
+ const panel=h('div',{class:'card detail sticky',id:'detail'});const dayOfT=z=>(IX.task[z.id]&&IX.task[z.id].d)||g;
+ const select=z=>{ui.sel[K]=z.id;document.querySelectorAll('.task').forEach(r=>r.setAttribute('aria-selected',r.dataset.id===z.id));panel.innerHTML='';add(panel,[taskDetail(z,dayOfT(z))]);
   if(matchMedia('(max-width:1180px)').matches)panel.scrollIntoView({behavior:'smooth',block:'start'})};
- const sec=(title,arr,opt)=>{opt=opt||{};if(!arr.length)return null;const box=h('div',{class:'tasks'},arr.map(t=>taskRow(t,dayOfT(t),t===sel,select,opt.from)));
-  const mins=arr.reduce((a,t)=>a+t.min,0);const head=h('div',{class:'secthead'},h('h3',{},opt.icon?ic(opt.icon,'sm'):null,title),h('span',{class:'est',text:arr.filter(tDone).length+'/'+arr.length+' · '+fmtMin(mins)}));
-  if(opt.collapsed)return h('details',{class:'secfold'+(opt.cls?' '+opt.cls:'')},h('summary',{},head),opt.note?h('p',{class:'tiny muted',style:{margin:'0 0 8px'},text:opt.note}):null,box);
-  return h('section',{class:opt.cls||''},head,opt.note?h('p',{class:'tiny muted',style:{margin:'-4px 0 8px'},text:opt.note}):null,box)};
- // Tasks done on an earlier date than the day's own date are grouped away so the list shows the work of that date (Prem, 26 Nov).
- const earlier=d.sched==='pending'?d.tasks.filter(x=>tDone(x)&&x.kind!=='log'&&doneDate(x)<d.date):[];const notEarlier=x=>!earlier.includes(x);
- add(list,[sec('Must',mustOf(d).filter(notEarlier)),sec('Stretch (optional)',stretchOf(d).filter(notEarlier))]);
- if(isToday){
-  // work ahead: tasks of later, unfinished days ticked today show here; fully finished later days are merged into today
-  const ahead=doneOn(t).filter(x=>x.d.n>d.n&&!realDone(x.d)&&x.t.kind!=='log').map(x=>x.t);
-  add(list,[sec('Done ahead today',ahead,{icon:'zap',cls:'ahead slidein',from:true,note:'Ticked from later days. They count for today, and those days get lighter.'})]);
-  SCHED.doneToday.filter(x=>x!==d).forEach(m=>add(list,[sec('Also completed today: Day '+m.n+' · '+m.title,m.tasks.filter(x=>x.kind!=='log'&&tDone(x)),{icon:'check',collapsed:true,cls:'merged',from:true,note:'You finished this day today, so it moved into today and every later day moved up by one.'})]))}
- add(list,[sec('Done earlier',earlier,{icon:'cal',collapsed:true,note:'Finished before '+fmtD(d.date)+'. They still count toward this day.'})]);
- add(list,[logCard(isToday?t:d.date,isToday?[d].concat(SCHED.doneToday.filter(x=>x!==d)):[d])]);
- add(panel,[taskDetail(sel,dayOfT(sel))]);
+ const sec=(title,arr,opt)=>{opt=opt||{};if(!arr.length)return null;const box=h('div',{class:'tasks'},arr.map(z=>taskRow(z,dayOfT(z),z===sel,select,opt.from?fromLabel(z):false)));
+  const mins=arr.reduce((a,z)=>a+z.min,0);const hd=h('div',{class:'secthead'},h('h3',{},opt.icon?ic(opt.icon,'sm'):null,title),h('span',{class:'est',text:arr.filter(tDone).length+'/'+arr.length+' · '+fmtMin(mins)}));
+  if(opt.collapsed)return h('details',{class:'secfold'+(opt.cls?' '+opt.cls:'')},h('summary',{},hd),opt.note?h('p',{class:'tiny muted',style:{margin:'0 0 8px'},text:opt.note}):null,box);
+  return h('section',{class:opt.cls||''},hd,opt.note?h('p',{class:'tiny muted',style:{margin:'-4px 0 8px'},text:opt.note}):null,box)};
+ const cm=st.carry.filter(z=>z.must),cs=st.carry.filter(z=>!z.must);
+ if(isToday){add(list,[sec('Pending from earlier days',cm,{icon:'cal',cls:'carry',from:true,note:'Unfinished must tasks from earlier days. Finish these too.'}),sec('Optional from earlier days',cs,{icon:'cal',collapsed:true,from:true})])}
+ add(list,[sec(isPast?'Planned for this day':'Must',st.main.filter(z=>z.must)),sec('Stretch (optional)',st.main.filter(z=>!z.must))]);
+ if(isPast)add(list,[sec('Finished from earlier days',st.carry,{icon:'cal',from:true})]);
+ add(list,[sec('Done ahead',st.ahead,{icon:'zap',cls:'ahead slidein',from:true,note:isFut?'':'Ticked from later days. They are done, so those days got lighter (a fully finished day moved here and the days after it moved up).'})]);
+ if(isFut&&st.earlierDone)add(list,[h('p',{class:'tiny muted',text:plural(st.earlierDone,'task')+' of this day were already done ahead; they show on the day they were done.'})]);
+ add(list,[logCard(sl.date,g?[g]:[])]);
+ add(panel,[sel?taskDetail(sel,dayOfT(sel)):h('p',{class:'muted',text:'Nothing on this day yet.'})]);
  add(wrap,[h('div',{class:'split'},list,panel)]);return wrap}
 function doneOn(dt){const out=[];IX.study.forEach(d=>d.tasks.forEach(t=>{if(doneDate(t)===dt)out.push({t,d})}));return out}
 function restDayView(d){return offDayView(d.date)}
-function offDayView(dt){const inf=offInfo(dt)||{kind:'rest',title:'No study scheduled',note:''};const nx=currentDay();const t=todayISO();
+function offDayView(dt){const inf=offInfo(dt)||{kind:'rest',title:'No study scheduled',note:''};const nf=nextFutureSlot();const nx=nf?Object.assign({},nf.g,{n:nf.n,date:nf.date,id:nf.n}):null;const t=todayISO();
  return h('div',{class:'wrap'},h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(dt===t?'Today · ':'')+fmtD(dt)}),h('h1',{text:inf.title}),h('p',{text:inf.note}))),
   h('div',{class:'card donecard offcard popin'},h('div',{class:'big officon'},ic('coffee','lg'),h('span',{class:'steam'},h('i'),h('i'),h('i'))),
    h('h2',{text:inf.kind==='user'?'Enjoy the break':inf.kind==='fixed'?'No DA tasks today':'Rest day'}),
    h('p',{class:'muted',text:'Your streak is safe today.'+(nx?' Next: Day '+nx.n+' · '+nx.title+' on '+fmtD(nx.date)+'.':'')}),
    (()=>{const dn=doneOn(dt);if(!dn.length)return null;return h('div',{class:'donetoday slidein'},h('div',{class:'glab',text:(dt===t?'Done today':'Done on '+fmtD(dt))+' · '+plural(dn.length,'task')+' · '+fmtMin(dn.reduce((a,x)=>a+x.t.min,0))}),
-     h('ul',{},dn.map(x=>h('li',{},ic('check','sm'),h('a',{href:'#/day/'+x.d.id,text:'Day '+x.d.n+': '+x.t.t})))))})(),
+     h('ul',{},dn.map(x=>h('li',{},ic('check','sm'),x.t.t))))})(),
    h('div',{class:'row wrap',style:{justifyContent:'center',gap:'8px'}},
     inf.kind==='user'?h('button',{class:'btn',onclick:()=>{setDayOff(dt,false);toast('Day off removed. The plan moved back.');rerender()}},ic('refresh','sm'),'Undo day off'):null,
     nx&&dt===t?h('a',{class:'btn primary',href:'#/day/'+nx.id},'Work anyway: Day '+nx.n,ic('right','sm')):null,
     h('a',{class:'btn ghost',href:'#/plan'},'View plan'))))}
 // Day off: today or a future date. Pending work from that date moves to the next study day.
-function dayOffDialog(dt,d){const t=todayISO();const isT=dt===t;const pend=isT?mustOf(d).filter(x=>!tDone(x)):mustOf(d);const mins=pend.reduce((a,x)=>a+x.min,0);
+function dayOffDialog(dt,sl){const t=todayISO();const isT=dt===t;const stt=slotTasks(sl);const pend=stt.carry.concat(stt.main).filter(x=>x.must&&x.kind!=='log'&&!tDone(x));const mins=pend.reduce((a,x)=>a+x.min,0);const d={n:sl.n};
  const pf0=projectedFinish();S.off=S.off||{};const keep=S.off[dt];S.off[dt]={on:true,t:0};const pf1=projectedFinish();if(keep)S.off[dt]=keep;else delete S.off[dt];computeSchedule();
  let reason='';const reasons=['Health','Family','Travel','College','Other'];
  modal(close=>{const chips=h('div',{class:'row wrap',style:{gap:'6px',margin:'6px 0 14px'}},reasons.map(r=>{const b=h('button',{class:'chip plain pick',onclick:()=>{reason=reason===r?'':r;chips.querySelectorAll('.pick').forEach(x=>x.classList.toggle('on',x.textContent===reason))}},r);return b}));
@@ -975,7 +1019,7 @@ function taskRow(t,d,selected,select,from){const done=tDone(t);const pr=taskProg
  const ck=h('button',{class:'check'+(done?' on':pr&&pr.res&&!done?' part':'')+(jd?' justdone':''),'aria-label':(done?'Undo: ':'Mark done: ')+t.t,'aria-pressed':String(done),onclick:e=>{e.stopPropagation();toggleTask(t,d)}},ic('check','sm'));
  if(jd){for(let i=0;i<8;i++){const sp=h('i',{class:'spark'});sp.style.setProperty('--a',(i*45)+'deg');ck.appendChild(sp)}setTimeout(()=>{if(ui.justDone===t.id)ui.justDone=null},900)}
  const row=h('div',{class:'task'+(done?' done':'')+(jd?' justdone':''),role:'button',tabindex:'0','data-id':t.id,'aria-selected':String(!!selected),onclick:()=>select(t),onkeydown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(t)}}},
-  ck,h('div',{},h('div',{class:'ttl',text:t.t}),h('div',{class:'meta'},from?h('span',{class:'chip plain daychip'},'Day '+d.n):null,taskMeta(t),!from&&done&&doneDate(t)&&doneDate(t)!==d.date?h('span',{class:'chip ok'},ic('check','sm'),'Done '+fmtD(doneDate(t))):null)),h('span',{class:'est'},ic(KIND_IC[t.kind]||'star','sm'),' ',t.est||fmtMin(t.min)));return row}
+  ck,h('div',{},h('div',{class:'ttl',text:t.t}),h('div',{class:'meta'},from?h('span',{class:'chip plain daychip'},typeof from==='string'?from:'Day '+d.n):null,taskMeta(t),!from&&done&&doneDate(t)&&doneDate(t)!==d.date?h('span',{class:'chip ok'},ic('check','sm'),'Done '+fmtD(doneDate(t))):null)),h('span',{class:'est'},ic(KIND_IC[t.kind]||'star','sm'),' ',t.est||fmtMin(t.min)));return row}
 function taskGuide(g){return h('div',{class:'guide'},
  h('div',{class:'gsec'},h('div',{class:'glab',text:'What'}),h('p',{text:g.what}),g.items?h('ul',{},g.items.map(x=>h('li',{text:x}))):null),
  h('div',{class:'gsec'},h('div',{class:'glab',text:'Why'}),h('p',{text:g.why})),
@@ -1012,34 +1056,39 @@ function logCard(dt,days){const l=logOf(dt)||{};const ta=h('textarea',{class:'in
  ta.addEventListener('input',()=>{clearTimeout(ui.dayLogT);ui.dayLogT=setTimeout(()=>{const before=JSON.stringify(days.map(x=>{const lt=x.tasks.find(y=>y.kind==='log');return lt?tDone(lt):1}));
   S.logs[dt]={text:ta.value,t:now()};syncLogTasks();save();st.textContent='Saved '+fmtTime(now());
   const after=JSON.stringify(days.map(x=>{const lt=x.tasks.find(y=>y.kind==='log');return lt?tDone(lt):1}));if(before!==after){Sfx.play('tick');toast('Daily log task done');rerender()}},700)});
- const cover=days.length>1?'Covers Day '+days.map(x=>x.n).sort((a,b)=>a-b).join(' + ')+' (one log per date). ':'';
+ const cover='';
  return h('section',{class:'card'},h('div',{class:'row between'},h('h3',{style:{margin:0}},'Daily log · '+(dt===todayISO()?'Today, ':'')+fmtD(dt)),st),h('p',{class:'tiny muted',style:{margin:'4px 0 8px'},text:cover+'This log goes into the Drive backup so Claude can read it and help.'}),ta)}
 
 /* ---------- plan ---------- */
-function viewPlan(){computeSchedule();const wrap=h('div',{class:'wrap'});const done=IX.study.filter(d=>dayStat(d).st==='done').length;const p=pace();const pf=projectedFinish();const cur=currentDay();const t=todayISO();
+function viewPlan(){computeSchedule();const wrap=h('div',{class:'wrap'});const SL=SCHED.slots,T=SCHED.todaySlot,t=todayISO();const p=pace();const pf=projectedFinish();
+ const gDone=IX.study.filter(d=>realDone(d)).length;const daysDone=SL.filter(x=>x.kind==='past').length+(todayComplete()?1:0);
  const offs=Object.keys(S.off||{}).filter(isUserOff).sort();const upOff=offs.filter(x=>x>=t);
  const paceTxt=p.finished?'Journey complete':(p.diff<0?plural(-p.diff,'study day')+' behind the target ('+fmtDY(p.target)+')':p.diff>0?plural(p.diff,'study day')+' ahead of the target ('+fmtDY(p.target)+')':'On track for the target ('+fmtDY(p.target)+')');
- add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Roadmap v3 · started '+fmtDY(C.meta.start)}),h('h1',{text:'Plan'}),h('p',{text:done+' of '+IX.study.length+' days complete · projected finish '+fmtDY(pf)})),
-  cur?h('a',{class:'btn primary',href:'#/today'},'Today: Day '+(SCHED.todayDay?SCHED.todayDay.n:cur.n)):null)]);
- add(wrap,[h('div',{class:'card',style:{marginBottom:'20px'}},h('div',{class:'row between'},h('b',{text:'Overall'}),h('span',{class:'est',text:Math.round(done/IX.study.length*100)+'%'})),h('div',{class:'bar',style:{marginTop:'8px'}},h('i',{style:{width:(done/IX.study.length*100)+'%'}})),
+ add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:'Roadmap v3 · started '+fmtDY(C.meta.start)}),h('h1',{text:'Plan'}),h('p',{text:daysDone+' of '+SL.length+' days complete · projected finish '+fmtDY(pf)})),
+  T?h('a',{class:'btn primary',href:'#/today'},'Today: Day '+T.n):null)]);
+ add(wrap,[h('div',{class:'card',style:{marginBottom:'20px'}},h('div',{class:'row between'},h('b',{text:'Content done'}),h('span',{class:'est',text:Math.round(gDone/IX.study.length*100)+'%'})),h('div',{class:'bar',style:{marginTop:'8px'}},h('i',{style:{width:(gDone/IX.study.length*100)+'%'}})),
   h('p',{class:'small',style:{margin:'10px 0 0'},text:paceTxt}),
-  h('p',{class:'tiny muted',style:{margin:'6px 0 0'},text:'Dates move with you: an unfinished day stays as Today, a day off pushes the rest by one study day, tasks done ahead show in Today, and a later day finished today moves into today (the rest moves up). Sundays are rest days; 7-8 Dec is Milestone 3.'}),
+  SCHED.carryMin?h('p',{class:'small',style:{margin:'6px 0 0'},text:'~'+fmtMin(SCHED.carryMin)+' of unfinished must work is carried into today.'}):null,
+  h('p',{class:'tiny muted',style:{margin:'6px 0 0'},text:'A day is a study date. Unfinished tasks move to the next day (on top). Tasks of a later day done today move to today\'s page; a later day finished today moves into today and every later day moves up one number. A day off pushes everything by one study day. Sundays are rest days; 7-8 Dec is Milestone 3.'}),
   upOff.length?h('div',{class:'row wrap',style:{gap:'6px',marginTop:'10px'}},h('span',{class:'tiny muted',text:'Planned days off:'}),upOff.map(x=>h('button',{class:'chip plain offchip',title:'Remove this day off',onclick:()=>confirmBox('Remove day off on '+fmtD(x)+'?','The plan moves back by one study day.','Remove',()=>{setDayOff(x,false);rerender()})},ic('coffee','sm'),fmtD(x),ic('x','sm')))):null)]);
- C.meta.blocks.forEach(b=>{const sd=IX.study.filter(d=>d.block===b.id);if(!sd.length)return;const bd=sd.filter(d=>dayStat(d).st==='done').length;
-  const ds=sd.map(d=>d.date).sort();const a=ds[0],z=ds[ds.length-1];const tiles=sd.map(d=>({dt:d.date,n:d.n,el:()=>dayTile(d,cur)}));
-  for(let x=addDays(a,1);x<z;x=addDays(x,1)){if(isOffDate(x)&&!sd.some(d=>d.date===x))tiles.push({dt:x,n:0,el:()=>offTile(x)})}
+ C.meta.blocks.forEach(b=>{const sd=SL.filter(x=>x.g&&x.g.block===b.id);if(!sd.length)return;const gb=IX.study.filter(d=>d.block===b.id);const bd=gb.filter(d=>realDone(d)).length;
+  const ds=sd.map(x=>x.date).sort();const a=ds[0],z=ds[ds.length-1];const tiles=sd.map(x=>({dt:x.date,n:x.n,el:()=>dayTile(x)}));
+  for(let q=addDays(a,1);q<z;q=addDays(q,1)){if(isOffDate(q)&&!sd.some(x=>x.date===q))tiles.push({dt:q,n:0,el:()=>offTile(q)})}
   tiles.sort((u,v)=>u.dt<v.dt?-1:u.dt>v.dt?1:u.n-v.n);
-  add(wrap,[h('section',{class:'block'},h('div',{class:'blockhead'},h('div',{},h('h2',{style:{margin:0},text:b.title}),h('div',{class:'small muted',text:fmtD(a).slice(4)+' - '+fmtD(z).slice(4)+' · '+sd.length+' study days'})),
-   h('div',{style:{minWidth:'180px'}},h('div',{class:'row between small'},h('span',{class:'muted',text:bd+'/'+sd.length}),h('b',{text:Math.round(bd/sd.length*100)+'%'})),h('div',{class:'bar'},h('i',{style:{width:(bd/sd.length*100)+'%'}})))),
+  add(wrap,[h('section',{class:'block'},h('div',{class:'blockhead'},h('div',{},h('h2',{style:{margin:0},text:b.title}),h('div',{class:'small muted',text:fmtD(a).slice(4)+' - '+fmtD(z).slice(4)+' · '+plural(sd.length,'day')})),
+   h('div',{style:{minWidth:'180px'}},h('div',{class:'row between small'},h('span',{class:'muted',text:bd+'/'+gb.length+' content days'}),h('b',{text:Math.round(bd/gb.length*100)+'%'})),h('div',{class:'bar'},h('i',{style:{width:(bd/gb.length*100)+'%'}})))),
    h('div',{class:'days'},tiles.map(x=>x.el())))])});return wrap}
 function offTile(dt){const inf=offInfo(dt);const user=inf&&inf.kind==='user';
  return h(user&&dt>=todayISO()?'button':'div',{class:'dtile rest'+(user?' useroff':''),title:user?'Day off (tap to remove)':inf.title,onclick:user&&dt>=todayISO()?()=>confirmBox('Remove day off on '+fmtD(dt)+'?','The plan moves back by one study day.','Remove',()=>{setDayOff(dt,false);rerender()}):null},
   h('div',{class:'d'},h('span',{text:fmtD(dt)})),h('div',{class:'t'},user?ic('coffee','sm'):null,user?' Day off':inf.title),
   (()=>{const n=doneOn(dt).length;return n?h('span',{class:'tiny',style:{fontWeight:600},text:plural(n,'task')+' done'}):null})())}
-function dayTile(d,cur){const st=dayStat(d);const t=todayISO();const isCur=SCHED.todayDay&&SCHED.todayDay.id===d.id;
- return h('a',{class:'dtile'+(st.st==='done'?' done':'')+(isCur?' cur':''),href:isCur?'#/today':'#/day/'+d.id,'aria-label':'Day '+d.n+': '+d.title+(st.st==='done'?', done':', '+fmtD(d.date))},
-  h('div',{class:'d'},h('span',{text:'Day '+d.n}),h('span',{text:d.date===t?'Today':fmtD(d.date).slice(4)})),h('div',{class:'t',text:d.title}),
-  st.st==='done'?h('span',{class:'chip ok',style:{alignSelf:'flex-start'}},ic('check','sm'),'Done'):h('div',{class:'bar'},h('i',{style:{width:(st.pct*100)+'%'}})))}
+function dayTile(sl){const t=todayISO();const isCur=sl.kind==='today';const g=sl.g;const st=slotTasks(sl);
+ const fut=sl.kind==='future',past=sl.kind==='past';const doneTxt=past||(isCur&&todayComplete());
+ const pctF=fut&&g?(g.tasks.filter(x=>tDone(x)&&x.kind!=='log').length/Math.max(1,g.tasks.filter(x=>x.kind!=='log').length)):0;
+ const mustL=st.carry.concat(st.main).filter(x=>x.must&&x.kind!=='log');const pctT=mustL.length?mustL.filter(tDone).length/mustL.length:0;
+ return h('a',{class:'dtile'+(doneTxt?' done':'')+(isCur?' cur':''),href:isCur?'#/today':'#/day/'+sl.n,'aria-label':'Day '+sl.n+': '+(g?g.title:'')+(doneTxt?', done':', '+fmtD(sl.date))},
+  h('div',{class:'d'},h('span',{text:'Day '+sl.n}),h('span',{text:sl.date===t?'Today':fmtD(sl.date).slice(4)})),h('div',{class:'t',text:g?g.title:''}),
+  doneTxt?h('span',{class:'chip ok',style:{alignSelf:'flex-start'}},ic('check','sm'),past?(st.movedOut?'Worked':'Done'):'Done'):h('div',{class:'bar'},h('i',{style:{width:((isCur?pctT:pctF)*100)+'%'}})))}
 
 /* ---------- post kit: material for a LinkedIn post since the previous post ---------- */
 function postWindow(t,d){const posts=IX.study.flatMap(x=>x.tasks.filter(y=>y.kind==='post').map(y=>({t:y,d:x})));const i=posts.findIndex(p=>p.t.id===t.id);
@@ -1047,8 +1096,8 @@ function postWindow(t,d){const posts=IX.study.flatMap(x=>x.tasks.filter(y=>y.kin
 function postMaterial(t,d){const win=postWindow(t,d);const lines=[];const learned=[],built=[],proofs=[],logs=[];let solved=0,tried=0;const quizzes=[];
  win.forEach(x=>{x.tasks.forEach(y=>{if(!tDone(y)||y.id===t.id)return;const o=S.tasks[y.id];if(y.kind==='learn')learned.push(y.t);if(y.kind==='build'||y.kind==='github')built.push(y.t);if(o.proof)proofs.push(y.t+': '+o.proof);
    if(y.set){const pr=taskProgress(y);solved+=pr.ok;tried+=pr.n;const q=S.quiz[y.set];if(pr.quiz&&q)quizzes.push(IX.set[y.set].title+': '+q.best+'/'+q.total)}});
-  });[...new Set(win.map(x=>x.date))].sort().forEach(dt=>{const l=logOf(dt);if(l&&l.text.trim())logs.push(fmtD(dt)+' (Day '+win.filter(x=>x.date===dt).map(x=>x.n).join('+')+'): '+l.text.trim())});
- const range=win.length?('Day '+win[0].n+' to Day '+win[win.length-1].n+' ('+fmtD(win[0].date)+' to '+fmtD(win[win.length-1].date)+')'):'';
+  });[...new Set(win.map(x=>x.date))].sort().forEach(dt=>{const l=logOf(dt);if(l&&l.text.trim())logs.push(fmtD(dt)+': '+l.text.trim())});
+ const range=win.length?('Day '+dayNo(win[0])+' to Day '+dayNo(win[win.length-1])+' ('+fmtD(win[0].date)+' to '+fmtD(win[win.length-1].date)+')'):'';
  return{win,range,learned,built,proofs,logs,solved,tried,quizzes}}
 function postContextText(t,d){const m=postMaterial(t,d);const x=xpInfo(),st=streakInfo();
  return ['DA Journey post context','Post task: '+t.t+' (Day '+d.n+')','Period: '+m.range,'Overall: '+IX.study.filter(z=>dayStat(z).st==='done').length+'/'+IX.study.length+' days done, streak '+st.cur+', level '+x.L,
@@ -1083,7 +1132,7 @@ function resourcesView(){const box=h('div',{});const q=h('input',{class:'input',
  q.addEventListener('input',draw);draw();add(box,[q,list,h('p',{class:'tiny muted',text:'Every length verified on 25 Nov 2026 (YouTube page data).'})]);return box}
 
 /* ---------- set workspace ---------- */
-function backLink(taskId){if(taskId&&IX.task[taskId]){const d=IX.task[taskId].d;const cur=currentDay();return h('a',{class:'btn ghost sm',href:cur&&cur.id===d.id?'#/today':'#/day/'+d.id},ic('left','sm'),'Day '+d.n)}return h('a',{class:'btn ghost sm',href:'#/practice/'+(ui.libTab||'python')},ic('left','sm'),'Practice')}
+function backLink(taskId){if(taskId&&IX.task[taskId]){const d=IX.task[taskId].d;computeSchedule();const sl=SCHED.groupSlot[d.id];return h('a',{class:'btn ghost sm',href:!sl||sl.kind==='today'?'#/today':'#/day/'+sl.n},ic('left','sm'),sl&&sl.kind!=='today'?'Day '+sl.n:'Today')}return h('a',{class:'btn ghost sm',href:'#/practice/'+(ui.libTab||'python')},ic('left','sm'),'Practice')}
 function viewSet(id,taskId){const s=IX.set[id];if(!s)return h('p',{class:'empty',text:'Set not found.'});const t=taskId&&IX.task[taskId]?IX.task[taskId].t:null;
  const wrap=h('div',{class:'wrap'});
  add(wrap,[h('div',{class:'row',style:{marginBottom:'8px'}},backLink(taskId)),h('div',{class:'pagehead'},h('div',{},h('div',{class:'row wrap'},chip(s.subject==='quiz'?'career':s.subject),t?h('span',{class:'chip plain',text:'Task: '+t.t.slice(0,60)}):null),h('h1',{style:{marginTop:'8px'},text:s.title}),s.intro?h('p',{text:s.intro}):null),
@@ -1316,7 +1365,7 @@ function feedbackForm(where){modal(close=>{const ta=h('textarea',{class:'input',
  return h('div',{class:'stack'},h('h2',{text:'Feedback for Claude'}),h('p',{class:'small muted',text:'This note goes into the Drive backup. Ask Claude in chat to check your DA Journey feedback: Claude reads it, finds the root cause and improves the system.'}),
   h('div',{class:'field'},h('label',{for:'fbwhere',text:'Kahan'}),wh),h('div',{class:'field'},h('label',{for:'fbtext',text:'Problem / insight'}),ta),
   h('div',{class:'row',style:{justifyContent:'flex-end'}},h('button',{class:'btn ghost',onclick:close},'Cancel'),h('button',{class:'btn primary',onclick:()=>{const v=ta.value.trim();if(v.length<5){toast('Add a little more detail');return}
-   S.fb['f'+now().toString(36)]={text:v,where:wh.value.trim(),day:(currentDay()||{}).n||0,status:'open',created:new Date().toISOString(),t:now()};save();close();toast('Feedback saved. Let Claude know.');rerender()}},'Save')))})}
+   S.fb['f'+now().toString(36)]={text:v,where:wh.value.trim(),day:(SCHED.todaySlot||{}).n||0,status:'open',created:new Date().toISOString(),t:now()};save();close();toast('Feedback saved. Let Claude know.');rerender()}},'Save')))})}
 function feedbackCard(){const items=Object.entries(S.fb||{}).sort((a,b)=>(b[1].t||0)-(a[1].t||0));const open=items.filter(([,f])=>f.status==='open');
  return h('div',{class:'card'},h('div',{class:'row between'},h('h3',{style:{margin:0},text:'Feedback for Claude'}),h('span',{class:'est',text:open.length+' open'})),
   h('p',{class:'tiny muted',text:'Self-improving app: write any problem or idea here (or tell Claude in chat). Claude finds the root cause and fixes it across the whole system.'}),
