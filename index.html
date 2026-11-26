@@ -386,7 +386,7 @@ input.vol{width:130px;accent-color:var(--primary)}
 <script>
 'use strict';
 /* ===== DA Journey v2 ===== */
-const APP_VER='2026.11.26-5';
+const APP_VER='2026.11.26-6';
 const CFG={
  CLIENT_ID:'331264298614-jr5f5ib5o7jkaqrbs3k7nla4gm7lsrv2.apps.googleusercontent.com', // set after the "DA Journey" Google Cloud project is created
  OWNER_H:'e3f2701c4914321da0c06ace2cb5fad3a3b71419d9da7f3de73f83a503bdaa1b', // SHA-256 of the owner's Google email (same owner as Hunter System)
@@ -946,7 +946,8 @@ function viewDay(sl){const t=todayISO();
  const hrefOf=x=>x.kind==='today'?'#/today':'#/day/'+x.n;
  add(wrap,[h('div',{class:'pagehead'},h('div',{},h('div',{class:'eyebrow',text:(isToday?'Today · ':'')+(g?blockOf(g).title+' · ':'')+'Day '+sl.n+' of '+total}),h('h1',{text:g?g.title:'All planned content done'}),h('p',{text:paceLine})),
   h('div',{class:'row wrap'},offBtn,prev?h('a',{class:'btn sm',href:hrefOf(prev),'aria-label':'Previous day'},ic('left','sm'),'Day '+prev.n):null,next?h('a',{class:'btn sm',href:hrefOf(next),'aria-label':'Next day'},'Day '+next.n,ic('right','sm')):null))]);
- if(isToday){const ms=missedSince();if(ms.length&&!ui.missedHide)add(wrap,[h('div',{class:'note amber slidein',style:{marginBottom:'14px'}},ic('cal','sm'),' No study on '+ms.map(fmtD).join(', ')+' and no day off taken, so the plan moved forward by '+plural(ms.length,'day')+'. Next time tap "Take today off" to keep your streak safe. ',h('button',{class:'linkbtn',onclick:()=>{ui.missedHide=true;rerender()}},'OK'))])}
+ if(isToday){const ms=missedSince();if(ms.length&&!ui.missedHide)add(wrap,[h('div',{class:'note amber slidein',style:{marginBottom:'14px'}},ic('cal','sm'),' No study on '+ms.map(fmtD).join(', ')+' and no day off taken, so the plan moved forward by '+plural(ms.length,'day')+'. Were you unwell or busy? Mark it as a day off to keep your streak safe. ',
+  h('span',{class:'row wrap',style:{gap:'6px',marginTop:'6px'}},ms.filter(x=>x>=addDays(t,-2)).map(x=>h('button',{class:'btn sm ghost offbtn',onclick:()=>dayOffDialog(x,null)},ic('coffee','sm'),'Mark '+fmtD(x)+' as day off')),h('button',{class:'linkbtn',onclick:()=>{ui.missedHide=true;rerender()}},'OK')))])}
  if(isToday&&isOffDate(t))add(wrap,[h('div',{class:'note amber',style:{marginBottom:'14px'}},ic('coffee','sm'),' Today is a rest day. The work you do today still counts as a day.')]);
  if(isFut)add(wrap,[h('div',{class:'note',style:{marginBottom:'14px'}},'Scheduled for '+fmtD(sl.date)+'. A task you tick here is done today: it leaves this day and shows on Day '+(SCHED.todaySlot?SCHED.todaySlot.n:'')+' (today) under "Done ahead". Finish all of this day\'s must tasks today and the whole day moves into today, so every later day moves up one number. ',SCHED.todaySlot?h('a',{href:'#/today'},'Go to Today'):null)]);
  const mustL=st.carry.concat(st.main).filter(x=>x.must&&x.kind!=='log');const dn=mustL.filter(tDone);
@@ -995,17 +996,17 @@ function offDayView(dt){const inf=offInfo(dt)||{kind:'rest',title:'No study sche
     nx&&dt===t?h('a',{class:'btn primary',href:'#/day/'+nx.id},'Work anyway: Day '+nx.n,ic('right','sm')):null,
     h('a',{class:'btn ghost',href:'#/plan'},'View plan'))))}
 // Day off: today or a future date. Pending work from that date moves to the next study day.
-function dayOffDialog(dt,sl){const t=todayISO();const isT=dt===t;const stt=slotTasks(sl);const pend=stt.carry.concat(stt.main).filter(x=>x.must&&x.kind!=='log'&&!tDone(x));const mins=pend.reduce((a,x)=>a+x.min,0);const d={n:sl.n};
+function dayOffDialog(dt,sl){const t=todayISO();const isT=dt===t,isPastD=dt<t;const stt=sl?slotTasks(sl):{carry:[],main:[]};const pend=stt.carry.concat(stt.main).filter(x=>x.must&&x.kind!=='log'&&!tDone(x));const mins=pend.reduce((a,x)=>a+x.min,0);const d={n:sl?sl.n:0};
  const pf0=projectedFinish();S.off=S.off||{};const keep=S.off[dt];S.off[dt]={on:true,t:0};const pf1=projectedFinish();if(keep)S.off[dt]=keep;else delete S.off[dt];computeSchedule();
  let reason='';const reasons=['Health','Family','Travel','College','Other'];
  modal(close=>{const chips=h('div',{class:'row wrap',style:{gap:'6px',margin:'6px 0 14px'}},reasons.map(r=>{const b=h('button',{class:'chip plain pick',onclick:()=>{reason=reason===r?'':r;chips.querySelectorAll('.pick').forEach(x=>x.classList.toggle('on',x.textContent===reason))}},r);return b}));
-  return h('div',{},h('div',{class:'officon small'},ic('coffee','lg')),h('h2',{text:isT?'Take today off?':'Day off on '+fmtD(dt)+'?'}),
-   h('p',{class:'muted',text:(isT?(pend.length?plural(pend.length,'remaining must task')+' (~'+fmtMin(mins)+') and':'')+' the rest of the plan move forward by one study day.':'Day '+d.n+' and everything after it move forward by one study day.')+' Finished tasks stay done and count for today. Your streak is protected.'}),
-   h('div',{class:'note small',style:{margin:'10px 0'}},'Projected finish: '+fmtDY(pf0)+' → '+fmtDY(pf1)),
+  return h('div',{},h('div',{class:'officon small'},ic('coffee','lg')),h('h2',{text:isT?'Take today off?':isPastD?'Mark '+fmtD(dt)+' as a day off?':'Day off on '+fmtD(dt)+'?'}),
+   isPastD?h('p',{class:'muted',text:'You did not study on '+fmtD(dt)+'. Marking it as a day off keeps your streak safe without using a streak freeze. The plan already moved on, so nothing else changes.'}):h('p',{class:'muted',text:(isT?(pend.length?plural(pend.length,'remaining must task')+' (~'+fmtMin(mins)+') and':'')+' the rest of the plan move forward by one study day.':'Day '+d.n+' and everything after it move forward by one study day.')+' Finished tasks stay done and count for today. Your streak is protected.'}),
+   isPastD?null:h('div',{class:'note small',style:{margin:'10px 0'}},'Projected finish: '+fmtDY(pf0)+' → '+fmtDY(pf1)),
    h('div',{class:'tiny muted',text:'Reason (optional)'}),chips,
    h('div',{class:'row',style:{justifyContent:'flex-end',gap:'8px'}},h('button',{class:'btn ghost',onclick:close},'Cancel'),
-    h('button',{class:'btn primary',onclick:()=>{close();const sp=$('.split');const go=()=>{setDayOff(dt,true,reason);Sfx.play('off');toast(isT?'Day off saved. See you on '+fmtD(nextStudyDate(addDays(t,1)))+'.':'Day off planned for '+fmtD(dt)+'.');location.hash=isT?'#/today':location.hash;rerender()};
-     if(sp&&isT&&!matchMedia('(prefers-reduced-motion: reduce)').matches){sp.classList.add('leaving');setTimeout(go,380)}else go()}},ic('coffee','sm'),isT?'Take the day off':'Plan day off')))})}
+    h('button',{class:'btn primary',onclick:()=>{close();const sp=$('.split');const go=()=>{setDayOff(dt,true,reason);Sfx.play('off');toast(isT?'Day off saved. See you on '+fmtD(nextStudyDate(addDays(t,1)))+'.':isPastD?fmtD(dt)+' marked as a day off. Streak safe.':'Day off planned for '+fmtD(dt)+'.');location.hash=isT?'#/today':location.hash;rerender()};
+     if(sp&&isT&&!matchMedia('(prefers-reduced-motion: reduce)').matches){sp.classList.add('leaving');setTimeout(go,380)}else go()}},ic('coffee','sm'),isT?'Take the day off':isPastD?'Mark as day off':'Plan day off')))})}
 function taskMeta(t){const m=[chip(t.comp)];const pr=taskProgress(t);
  if(pr){m.push(h('span',{class:'chip plain'},ic('target','sm'),pr.n?pr.ok+'/'+pr.n+' solved':'',pr.quiz?(pr.n?' · ':'')+(pr.qd?'quiz done':'quiz'):''))}
  if(t.proof)m.push(h('span',{class:'chip '+(S.tasks[t.id]&&S.tasks[t.id].proof?'ok':'plain')},ic('link','sm'),'proof'));
@@ -1078,8 +1079,8 @@ function viewPlan(){computeSchedule();const wrap=h('div',{class:'wrap'});const S
   add(wrap,[h('section',{class:'block'},h('div',{class:'blockhead'},h('div',{},h('h2',{style:{margin:0},text:b.title}),h('div',{class:'small muted',text:fmtD(a).slice(4)+' - '+fmtD(z).slice(4)+' · '+plural(sd.length,'day')})),
    h('div',{style:{minWidth:'180px'}},h('div',{class:'row between small'},h('span',{class:'muted',text:bd+'/'+gb.length+' content days'}),h('b',{text:Math.round(bd/gb.length*100)+'%'})),h('div',{class:'bar'},h('i',{style:{width:(bd/gb.length*100)+'%'}})))),
    h('div',{class:'days'},tiles.map(x=>x.el())))])});return wrap}
-function offTile(dt){const inf=offInfo(dt);const user=inf&&inf.kind==='user';
- return h(user&&dt>=todayISO()?'button':'div',{class:'dtile rest'+(user?' useroff':''),title:user?'Day off (tap to remove)':inf.title,onclick:user&&dt>=todayISO()?()=>confirmBox('Remove day off on '+fmtD(dt)+'?','The plan moves back by one study day.','Remove',()=>{setDayOff(dt,false);rerender()}):null},
+function offTile(dt){const inf=offInfo(dt);const user=inf&&inf.kind==='user';const rem=user&&dt>=addDays(todayISO(),-2);
+ return h(rem?'button':'div',{class:'dtile rest'+(user?' useroff':''),title:rem?'Day off (tap to remove)':inf.title,onclick:rem?()=>confirmBox('Remove day off on '+fmtD(dt)+'?',dt<todayISO()?'It will count as a missed day again (streak).':'The plan moves back by one study day.','Remove',()=>{setDayOff(dt,false);rerender()}):null},
   h('div',{class:'d'},h('span',{text:fmtD(dt)})),h('div',{class:'t'},user?ic('coffee','sm'):null,user?' Day off':inf.title),
   (()=>{const n=doneOn(dt).length;return n?h('span',{class:'tiny',style:{fontWeight:600},text:plural(n,'task')+' done'}):null})())}
 function dayTile(sl){const t=todayISO();const isCur=sl.kind==='today';const g=sl.g;const st=slotTasks(sl);
