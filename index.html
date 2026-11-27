@@ -415,7 +415,7 @@ html[data-theme="dark"] .fslot.on{border-color:#0369a1}
 <script>
 'use strict';
 /* ===== DA Journey v2 ===== */
-const APP_VER='2026.11.27-5';
+const APP_VER='2026.11.28-2';
 const CFG={
  CLIENT_ID:'331264298614-jr5f5ib5o7jkaqrbs3k7nla4gm7lsrv2.apps.googleusercontent.com', // set after the "DA Journey" Google Cloud project is created
  OWNER_H:'e3f2701c4914321da0c06ace2cb5fad3a3b71419d9da7f3de73f83a503bdaa1b', // SHA-256 of the owner's Google email (same owner as Hunter System)
@@ -748,7 +748,7 @@ function autoComplete(setId){let any=false;(IX.bySet[setId]||[]).forEach(t=>{con
 /* ---------- activity + game ---------- */
 function activity(){const a={};for(const id in S.tasks){const o=S.tasks[id];if(!o.done)continue;const x=IX.task[id];if(!x)continue;const dt=o.date||iso(new Date(o.done));
  const r=a[dt]||(a[dt]={min:0,tasks:0,daysDone:0});r.min+=x.t.min;r.tasks++}
- IX.study.forEach(d=>{const st=dayStat(d);if(st.st==='done'){let last=0;mustOf(d).forEach(t=>{last=Math.max(last,S.tasks[t.id].done)});const dt=iso(new Date(last));(a[dt]||(a[dt]={min:0,tasks:0,daysDone:0})).daysDone++}});return a}
+ IX.study.forEach(d=>{const st=dayStat(d);if(st.st==='done'){let dt='';const rm=realMust(d);(rm.length?rm:mustOf(d)).forEach(t=>{const x=doneDate(t);if(x&&x>dt)dt=x});if(!dt)return;(a[dt]||(a[dt]={min:0,tasks:0,daysDone:0})).daysDone++}});return a}
 const restDates=()=>({has:dt=>isOffDate(dt)});
 /* Streak rules (Prem, 26-27 Nov 2026):
  - a date counts with 90+ min of finished tasks (or a finished day). Sundays and fixed off days are neutral; work on them still counts;
@@ -763,7 +763,7 @@ const STARTER_FREEZES=1,MAX_SPARE=2;
 function finishedDays(){const f={};IX.study.forEach(g=>{if(g.type!=='study')return;const m=realMust(g);if(!m.length||!m.every(tDone))return;let last='';m.forEach(x=>{const dd=doneDate(x);if(dd&&dd>last)last=dd});if(last)f[last]=(f[last]||0)+1});return f}
 function streakInfo(){const a=activity();const fin=finishedDays();const t=todayISO();const counts=x=>!!(a[x]&&(a[x].min>=90||a[x].daysDone>0));
  const st=C.meta.start;const ds=Object.keys(a).sort();let d=ds.length&&ds[0]<st?ds[0]:st;
- let cur=0,best=0,fr=STARTER_FREEZES,used=[],breaks=[],earned=[],covered=[],weekOK=true,frozen=null,L=0;
+ let cur=0,best=0,fr=STARTER_FREEZES,used=[],breaks=[],earned=[],covered=[],weekOK=true,frozen=null,L=0;let coverToday=false;
  while(d<=t){const dow=parseISO(d).getDay();if(dow===1)weekOK=true;const neutral=(isRestDow(d)||isFixedOff(d))&&!isUserOff(d);const judge=d<t||isUserOff(d);
   L+=(fin[d]||0);if(d>=st&&!isRestDow(d)&&!isFixedOff(d))L-=1;
   if(counts(d)){cur++;frozen=null}
@@ -771,9 +771,10 @@ function streakInfo(){const a=activity();const fin=finishedDays();const t=todayI
    if(L>=0){covered.push({date:d,off:isUserOff(d),len:cur,left:L})}
    else{weekOK=false;if(cur>0){if(fr>0){fr--;used.push({date:d,off:isUserOff(d),len:cur});frozen=d}else{breaks.push({date:d,len:cur,off:isUserOff(d)});cur=0;frozen=null}}L=Math.max(0,L+1)}}
   L=Math.min(L,MAX_SPARE);
+  if(d===t&&!counts(d)&&!neutral&&L>=0)coverToday=true;
   if(dow===6){const mon=addDays(d,-5);if(mon>=st&&weekOK&&(d<t||counts(d))){if(fr<3){fr++;earned.push({date:d,n:fr})}}weekOK=false}
   best=Math.max(best,cur);d=addDays(d,1)}
- return{cur,best,freezes:fr,usedFreeze:used.map(x=>x.date),used,breaks,earned,covered,spare:Math.max(0,L),pace:L,frozen:cur>0&&frozen?frozen:null,todayCounts:counts(t)}}
+ return{cur,best,freezes:fr,usedFreeze:used.map(x=>x.date),used,breaks,earned,covered,spare:Math.max(0,L),pace:L,coverToday,frozen:cur>0&&frozen?frozen:null,todayCounts:counts(t)}}
 // Planned day off ahead: will a spare day cover it? Shows how many more tasks are needed if not.
 function coverFor(dt){const t=todayISO();const si=streakInfo();
  const need=Object.keys(S.off||{}).filter(x=>x>t&&x<dt&&isUserOff(x)&&!isRestDow(x)&&!isFixedOff(x)).length+1;
@@ -1047,7 +1048,7 @@ function viewDay(sl){const t=todayISO();
  const sub=isPast?(st.movedOut?plural(st.movedOut,'unfinished task')+' moved to later days.':'Everything planned for this day was finished.'):isFut?'~'+fmtMin(tm)+' of must work'+(st.earlierDone?' · '+plural(st.earlierDone,'task')+' already done ahead':''):complete?'Great. Stretch tasks are optional.':'~'+fmtMin(tm-dm)+' of must tasks left';
  add(wrap,[h('section',{class:'card hero','aria-label':'Day progress'},h('div',{class:'ring'+(pct>=1?' full':'')},ringSVG(pct,0,(ui.ring=ui.ring||{})[K]),(()=>{ui.ring[K]=pct;return null})(),h('div',{class:'lbl'},h('b',{text:Math.round(pct*100)+'%'}),h('span',{text:isPast?'worked':'must done'}))),
   h('div',{},h('h2',{style:{marginBottom:'6px'},text:head}),h('p',{class:'muted',style:{margin:0}},sub)),
-  h('div',{class:'stats-mini'},h('div',{class:'streak'+(st2.frozen?' frozen':'')},flame(32,!st2.todayCounts,!!st2.frozen),h('div',{},h('div',{class:'row',style:{gap:'8px'}},'Streak: '+plural(st2.cur,'day')+(st2.frozen?' · frozen':'')),h('div',{class:'tiny',style:{fontWeight:500},text:st2.todayCounts?'Today counts':st2.frozen?'A freeze saved it. Study 90+ min today to continue.':'90+ min of must tasks today extends your streak'}),h('div',{class:'row',style:{gap:'6px',marginTop:'6px'}},freezeSlots(st2.freezes),h('span',{class:'tiny',style:{fontWeight:600},text:st2.freezes+' of 3 freezes'}),spareChip(st2.spare)))),
+  h('div',{class:'stats-mini'},h('div',{class:'streak'+(st2.frozen?' frozen':'')},flame(32,!st2.todayCounts,!!st2.frozen),h('div',{},h('div',{class:'row',style:{gap:'8px'}},'Streak: '+plural(st2.cur,'day')+(st2.frozen?' · frozen':'')),h('div',{class:'tiny',style:{fontWeight:500},text:st2.todayCounts?'Today counts':st2.coverToday?(isUserOff(todayISO())?'Day off today: covered by the days you finished ahead. Streak safe.':'Today is covered by the days you finished ahead. Study 90+ min to keep that lead.'):st2.frozen?'A freeze saved it. Study 90+ min today to continue.':'90+ min of must tasks today extends your streak'}),h('div',{class:'row',style:{gap:'6px',marginTop:'6px'}},freezeSlots(st2.freezes),h('span',{class:'tiny',style:{fontWeight:600},text:st2.freezes+' of 3 freezes'}),spareChip(st2.spare)))),
    h('div',{class:'lvl'},h('div',{class:'row'},h('span',{text:'Level '+x.L+' · '+x.title}),h('span',{class:'muted',text:x.xp+' XP'})),h('div',{class:'bar',style:{marginTop:'6px'}},h('i',{style:{width:Math.round(x.pct*100)+'%'}})))))]);
  const ucv=upcomingCover();if(ucv)add(wrap,[h('div',{class:'note small '+(ucv.covered?'green':'amber'),style:{margin:'0 0 12px'},text:coverText(ucv)})]);
  const list=h('div',{class:'stack'});
@@ -1152,7 +1153,7 @@ function logCard(dt,days){const l=logOf(dt)||{};const ta=h('textarea',{class:'in
  const st=h('span',{class:'tiny muted',text:l.t?'Saved '+fmtTime(l.t):''});const fut=dt>todayISO();if(fut){ta.disabled=true;ta.placeholder='The log for '+fmtD(dt)+' opens on that day.'}
  ta.addEventListener('input',()=>{clearTimeout(ui.dayLogT);ui.dayLogT=setTimeout(()=>{const before=JSON.stringify(days.map(x=>{const lt=x.tasks.find(y=>y.kind==='log');return lt?tDone(lt):1}));
   S.logs[dt]={text:ta.value,t:now()};syncLogTasks();save();st.textContent='Saved '+fmtTime(now());
-  const after=JSON.stringify(days.map(x=>{const lt=x.tasks.find(y=>y.kind==='log');return lt?tDone(lt):1}));if(before!==after){Sfx.play('tick');toast('Daily log task done');rerender()}},700)});
+  const after=JSON.stringify(days.map(x=>{const lt=x.tasks.find(y=>y.kind==='log');return lt?tDone(lt):1}));if(before!==after){Sfx.play('tick');toast('Daily log task done');const keep=document.activeElement===ta,pos=ta.selectionStart;rerender();if(keep){const n=$('#daylog');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}}}}},700)});
  const cover='';
  return h('section',{class:'card'},h('div',{class:'row between'},h('h3',{style:{margin:0}},'Daily log · '+(dt===todayISO()?'Today, ':'')+fmtD(dt)),st),h('p',{class:'tiny muted',style:{margin:'4px 0 8px'},text:cover+'This log goes into the Drive backup so Claude can read it and help.'}),ta)}
 
