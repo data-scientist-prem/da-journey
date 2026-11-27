@@ -415,7 +415,7 @@ html[data-theme="dark"] .fslot.on{border-color:#0369a1}
 <script>
 'use strict';
 /* ===== DA Journey v2 ===== */
-const APP_VER='2026.11.27-2';
+const APP_VER='2026.11.27-3';
 const CFG={
  CLIENT_ID:'331264298614-jr5f5ib5o7jkaqrbs3k7nla4gm7lsrv2.apps.googleusercontent.com', // set after the "DA Journey" Google Cloud project is created
  OWNER_H:'e3f2701c4914321da0c06ace2cb5fad3a3b71419d9da7f3de73f83a503bdaa1b', // SHA-256 of the owner's Google email (same owner as Hunter System)
@@ -1234,7 +1234,8 @@ function viewSet(id,taskId){const s=IX.set[id];if(!s)return h('p',{class:'empty'
  const wrap=h('div',{class:'wrap'});
  add(wrap,[h('div',{class:'row',style:{marginBottom:'8px'}},backLink(taskId)),h('div',{class:'pagehead'},h('div',{},h('div',{class:'row wrap'},chip(s.subject==='quiz'?'career':s.subject),t?h('span',{class:'chip plain',text:'Task: '+t.t.slice(0,60)}):null),h('h1',{style:{marginTop:'8px'},text:s.title}),s.intro?h('p',{text:s.intro}):null),
   /mock/.test(s.id)?mockTimer(s.id):null)]);
- if(s.file){const repo=s.subject==='powerbi'?'https://github.com/SatishDhawale/Power-BI-7-Hours-Masterclass-Practice-Files-with-Project':'https://github.com/SatishDhawale/Excel_For_Data_Analysis';
+ if(s.dl)add(wrap,[h('div',{class:'note row wrap between',style:{marginBottom:'14px'}},h('span',{},ic('file','sm'),' ',s.file,'. Practise in this file, not in Satish\'s: your video practice changes his file. If you break the data, download it again.'),h('a',{class:'btn sm primary',href:s.dl,download:s.dl},ic('download','sm'),'Download drill workbook'))]);
+ else if(s.file){const repo=s.subject==='powerbi'?'https://github.com/SatishDhawale/Power-BI-7-Hours-Masterclass-Practice-Files-with-Project':'https://github.com/SatishDhawale/Excel_For_Data_Analysis';
   add(wrap,[h('div',{class:'note row wrap between',style:{marginBottom:'14px'}},h('span',{},ic('file','sm'),' ',s.file),h('a',{class:'btn sm',href:repo,target:'_blank',rel:'noopener'},ic('download','sm'),'Practice files (GitHub)'))])}
  if(s.kind==='drill')add(wrap,[drillView(s)]);
  else if(s.kind==='quiz')add(wrap,[quizView(s)]);
